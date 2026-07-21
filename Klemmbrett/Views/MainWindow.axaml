@@ -3,6 +3,7 @@
         xmlns:vm="using:Klemmbrett.ViewModels"
         xmlns:views="using:Klemmbrett.Views"
         xmlns:controls="using:Klemmbrett.Controls"
+        xmlns:m="using:Klemmbrett.Models"
         x:Class="Klemmbrett.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Klemmbrett"
@@ -17,6 +18,23 @@
         <ListBox Margin="12,12,12,0" ItemsSource="{Binding Entries}"
                  SelectedItem="{Binding SelectedEntry}"
                  DoubleTapped="OnEntryDoubleTapped"
-                 Background="{DynamicResource KrosteSurfaceBrush}" />
+                 Background="{DynamicResource KrosteSurfaceBrush}">
+            <ListBox.DataTemplates>
+                <DataTemplate DataType="m:TextClipboardEntry">
+                    <TextBlock Text="{Binding Preview}" TextTrimming="CharacterEllipsis" />
+                </DataTemplate>
+                <DataTemplate DataType="m:ImageClipboardEntry">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Border Background="{DynamicResource KrosteBackgroundBrush}"
+                                CornerRadius="4" Padding="2">
+                            <Image Source="{Binding Bitmap}" MaxWidth="96" MaxHeight="64"
+                                   Stretch="Uniform" />
+                        </Border>
+                        <TextBlock Text="{Binding Info}" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource KrosteGoldBrush}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.DataTemplates>
+        </ListBox>
     </DockPanel>
 </views:ChromeWindow>

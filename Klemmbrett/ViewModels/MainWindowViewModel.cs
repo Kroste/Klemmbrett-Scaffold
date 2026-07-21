@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Klemmbrett.Models;
 using Klemmbrett.Services;
 using NLog;
 
@@ -19,12 +22,12 @@ public partial class MainWindowViewModel : ViewModelBase
     private IClipboard? _clipboard;
 
     [ObservableProperty]
-    private string _statusText = "Bereit — kopierte Texte erscheinen hier";
+    private string _statusText = "Bereit — kopierte Texte und Bilder erscheinen hier";
 
     [ObservableProperty]
-    private string? _selectedEntry;
+    private IClipboardEntry? _selectedEntry;
 
-    public ObservableCollection<string> Entries { get; } = [];
+    public ObservableCollection<IClipboardEntry> Entries { get; } = [];
 
     public MainWindowViewModel(
         ClipboardHistoryService history,
@@ -45,10 +48,12 @@ public partial class MainWindowViewModel : ViewModelBase
         _monitor.Start(topLevel);
     }
 
-    private void OnEntryCaptured(string text)
+    private void OnEntryCaptured(IClipboardEntry entry)
     {
-        Entries.Remove(text); // Duplikat nach vorn spiegeln (wie im Service)
-        Entries.Insert(0, text);
+        var existing = Entries.FirstOrDefault(e => e.DedupeKey == entry.DedupeKey);
+        if (existing is not null)
+            Entries.Remove(existing); // Duplikat nach vorn spiegeln (wie im Service)
+        Entries.Insert(0, entry);
         while (Entries.Count > _history.MaxEntries)
             Entries.RemoveAt(Entries.Count - 1);
         StatusText = $"{Entries.Count} Einträge";
@@ -57,12 +62,22 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task CopySelectedAsync()
     {
-        if (SelectedEntry is not { } text || _clipboard is null)
+        if (SelectedEntry is not { } entry || _clipboard is null)
             return;
 
-        Log.Info("Nutzeraktion: Eintrag zurückkopieren ({Length} Zeichen)", text.Length);
-        _monitor.NoteOwnWrite(text);
-        await _clipboard.SetTextAsync(text);
+        Log.Info("Nutzeraktion: Eintrag zurückkopieren ({Type})", entry.GetType().Name);
+        _monitor.NoteOwnWrite(entry.DedupeKey);
+
+        switch (entry)
+        {
+            case TextClipboardEntry t:
+                await _clipboard.SetTextAsync(t.Text);
+                break;
+            case ImageClipboardEntry i:
+                await _clipboard.SetValueAsync(DataFormat.Bitmap, i.Bitmap);
+                break;
+        }
+
         StatusText = "In die Zwischenablage kopiert";
     }
 

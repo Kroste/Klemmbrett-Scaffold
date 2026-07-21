@@ -1,16 +1,20 @@
 using System;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
+using Klemmbrett.Models;
 using NLog;
 
 namespace Klemmbrett.Services;
 
 /// <summary>
 /// Überwacht die Zwischenablage per Polling (Avalonia hat plattformübergreifend
-/// kein Change-Event) und meldet neue Texteinträge. Unter Wayland kann das Lesen
-/// bei unfokussiertem Fenster fehlschlagen — Fehler werden nur auf Trace geloggt.
+/// kein Change-Event) und meldet neue Text- und Bild-Einträge. Bilder werden per
+/// SHA-256 über die PNG-Bytes dedupliziert, weil jeder Poll ein neues
+/// Bitmap-Objekt liefert. Unter Wayland kann das Lesen bei unfokussiertem
+/// Fenster fehlschlagen — Fehler werden nur auf Trace geloggt.
 /// </summary>
 public sealed class ClipboardMonitorService : IDisposable
 {
@@ -20,10 +24,10 @@ public sealed class ClipboardMonitorService : IDisposable
     private readonly ClipboardHistoryService _history;
     private DispatcherTimer? _timer;
     private IClipboard? _clipboard;
-    private string? _lastSeen;
+    private string? _lastKey;
     private bool _readInProgress;
 
-    public event Action<string>? EntryCaptured;
+    public event Action<IClipboardEntry>? EntryCaptured;
 
     public ClipboardMonitorService(ClipboardHistoryService history) => _history = history;
 
@@ -38,11 +42,12 @@ public sealed class ClipboardMonitorService : IDisposable
 
         _timer = new DispatcherTimer(Interval, DispatcherPriority.Background, OnTick);
         _timer.Start();
-        Log.Info("Clipboard-Überwachung gestartet (Intervall {Ms} ms)", Interval.TotalMilliseconds);
+        Log.Info("Clipboard-Überwachung gestartet (Intervall {Ms} ms, Text + Bilder)",
+            Interval.TotalMilliseconds);
     }
 
-    /// <summary>Merkt sich selbst gesetzte Inhalte, damit Zurückkopieren keinen Doppel-Log erzeugt.</summary>
-    public void NoteOwnWrite(string text) => _lastSeen = text;
+    /// <summary>Merkt sich selbst gesetzte Inhalte, damit Zurückkopieren keinen Doppel-Eintrag erzeugt.</summary>
+    public void NoteOwnWrite(string dedupeKey) => _lastKey = dedupeKey;
 
     private async void OnTick(object? sender, EventArgs e)
     {
@@ -52,24 +57,52 @@ public sealed class ClipboardMonitorService : IDisposable
         _readInProgress = true;
         try
         {
+            // Text hat Vorrang; Bilder nur pruefen, wenn kein Text vorliegt
             var text = await _clipboard.TryGetTextAsync();
-            if (string.IsNullOrWhiteSpace(text) || text == _lastSeen)
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                Capture(new TextClipboardEntry(text));
+                return;
+            }
+
+            var bitmap = await _clipboard.TryGetBitmapAsync();
+            if (bitmap is null)
                 return;
 
-            _lastSeen = text;
-            _history.Add(text);
-            Log.Debug("Neuer Clipboard-Eintrag erfasst ({Length} Zeichen)", text.Length);
-            EntryCaptured?.Invoke(text);
+            var sw = Stopwatch.StartNew();
+            using var ms = new MemoryStream();
+            bitmap.Save(ms, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+            var hash = ImageClipboardEntry.ComputeHash(ms.ToArray());
+            Log.Trace("Clipboard-Bild gehasht in {Ms} ms ({Bytes} Bytes)", sw.ElapsedMilliseconds, ms.Length);
+
+            if ("I:" + hash == _lastKey)
+            {
+                bitmap.Dispose(); // unveraendertes Bild — Kopie wieder freigeben
+                return;
+            }
+
+            Capture(new ImageClipboardEntry(bitmap, hash));
         }
         catch (Exception ex)
         {
-            // Erwartbar z.B. unter Wayland ohne Fokus oder bei Nicht-Text-Inhalten
+            // Erwartbar z.B. unter Wayland ohne Fokus oder bei exotischen Formaten
             Log.Trace(ex, "Clipboard-Lesen fehlgeschlagen");
         }
         finally
         {
             _readInProgress = false;
         }
+    }
+
+    private void Capture(IClipboardEntry entry)
+    {
+        if (entry.DedupeKey == _lastKey)
+            return;
+
+        _lastKey = entry.DedupeKey;
+        _history.Add(entry);
+        Log.Debug("Neuer Clipboard-Eintrag erfasst ({Type})", entry.GetType().Name);
+        EntryCaptured?.Invoke(entry);
     }
 
     public void Dispose()

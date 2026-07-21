@@ -12,6 +12,8 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
 
 - **Automatische Überwachung:** Alles, was mit Strg+C kopiert wird, erscheint
   sofort im Verlauf (neuester Eintrag oben; Duplikate wandern nach vorn)
+- **Bilder inklusive:** Auch kopierte Bilder und Screenshots (Druck-Taste bzw.
+  Snipping Tool/Spectacle) landen im Verlauf — mit Vorschaubild und Auflösung
 - **Zurückkopieren:** Doppelklick auf einen Eintrag legt ihn wieder in die
   Zwischenablage
 - **Verlauf leeren:** Ein Klick, weg ist alles
@@ -37,8 +39,9 @@ chmod +x Klemmbrett-*-x86_64.AppImage
 
 ## Bedienung
 
-Klemmbrett starten und einfach normal arbeiten — jeder mit Strg+C kopierte
-Text erscheint automatisch im Verlauf (geprüft wird zweimal pro Sekunde).
+Klemmbrett starten und einfach normal arbeiten — jeder kopierte Text und
+jedes kopierte Bild erscheint automatisch im Verlauf (geprüft wird zweimal
+pro Sekunde). Bilder werden als Miniatur mit Auflösung angezeigt.
 Doppelklick auf einen Eintrag kopiert ihn zurück in die Zwischenablage,
 „Historie leeren" entfernt alle Einträge. Die Statuszeile unten meldet
 Aktionen und verfügbare Updates.

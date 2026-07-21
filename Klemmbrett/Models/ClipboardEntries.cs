@@ -1,0 +1,51 @@
+using System;
+using System.Security.Cryptography;
+using Avalonia.Media.Imaging;
+
+namespace Klemmbrett.Models;
+
+/// <summary>Ein Eintrag im Zwischenablage-Verlauf (Text oder Bild).</summary>
+public interface IClipboardEntry
+{
+    /// <summary>Schlüssel für Deduplizierung (gleicher Inhalt = gleicher Key).</summary>
+    string DedupeKey { get; }
+}
+
+public sealed class TextClipboardEntry : IClipboardEntry
+{
+    public TextClipboardEntry(string text)
+    {
+        Text = text;
+        var firstLine = text.AsSpan().TrimStart();
+        var nl = firstLine.IndexOfAny('\r', '\n');
+        if (nl >= 0) firstLine = firstLine[..nl];
+        Preview = firstLine.Length > 120 ? string.Concat(firstLine[..120], "…") : firstLine.ToString();
+    }
+
+    /// <summary>Vollständiger Text (wird beim Zurückkopieren verwendet).</summary>
+    public string Text { get; }
+
+    /// <summary>Einzeilige Kurzform für die Listenanzeige.</summary>
+    public string Preview { get; }
+
+    public string DedupeKey => "T:" + Text;
+}
+
+public sealed class ImageClipboardEntry : IClipboardEntry
+{
+    public ImageClipboardEntry(Bitmap bitmap, string contentHash)
+    {
+        Bitmap = bitmap;
+        ContentHash = contentHash;
+        Info = $"Bild {bitmap.PixelSize.Width}×{bitmap.PixelSize.Height}";
+    }
+
+    public Bitmap Bitmap { get; }
+    public string ContentHash { get; }
+    public string Info { get; }
+
+    public string DedupeKey => "I:" + ContentHash;
+
+    /// <summary>SHA-256 über die PNG-Bytes — identifiziert Bildinhalte über Poll-Zyklen hinweg.</summary>
+    public static string ComputeHash(byte[] pngBytes) => Convert.ToHexString(SHA256.HashData(pngBytes));
+}

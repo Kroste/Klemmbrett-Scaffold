@@ -16,6 +16,13 @@
   `TryGetTextAsync()`-Extension (Avalonia 12: `GetTextAsync` existiert nicht mehr)
 - Doppelklick auf Eintrag = Zurückkopieren (`NoteOwnWrite` verhindert
   Selbst-Erfassung); Wayland liest teils nur bei Fokus
+- Bilder-Support: `IClipboardEntry` (Text/Image) mit `DedupeKey`;
+  `TryGetBitmapAsync()` (DataFormat.Bitmap ist universell), Dedupe per SHA-256
+  über PNG-Bytes (jeder Poll liefert ein neues Bitmap-Objekt!),
+  `Bitmap.Save` braucht `PngBitmapEncoderOptions.Default` (alte Überladung
+  obsolet). Zurückkopieren via `SetValueAsync(DataFormat.Bitmap, …)`.
+  Bekannte Kosten: Hash-Encoding läuft pro Poll, solange ein Bild anliegt —
+  bei Bedarf Optimierung über selteneres Bild-Polling
 
 ## Roadmap
 
