@@ -34,6 +34,13 @@
   ApplicationIcon), ChromeWindow lädt es als Fenster-Icon.
 - Farb-Emoji-Fallback in Program.cs aktiv (🧹-Button) — Inter muss in
   FontManagerOptions erneut gesetzt werden.
+- 30-Tage-Persistenz (`HistoryStorageService`): history.json als Index (atomar
+  via tmp+move), Bilder als images/<hash>.png (nicht Base64 im JSON!).
+  Laden im VM-Ctor, Speichern bei jeder Erfassung + `desktop.Exit`
+  (`PersistOnExit`). Retention/Orphan-Cleanup beim Laden und Speichern.
+  Defekter Index → .broken-Backup statt Löschen. Tagesfilter als UI-freie
+  `HistoryDayFilter`-Logik (testbar); `_history.Entries` = Vollbestand,
+  `Entries` = gefilterte Sicht für die Liste. MaxEntries 200.
 
 ## Roadmap
 

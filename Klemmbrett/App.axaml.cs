@@ -26,6 +26,7 @@ public class App : Application
         var services = new ServiceCollection();
         services.AddSingleton<ClipboardHistoryService>();
         services.AddSingleton<ClipboardMonitorService>();
+        services.AddSingleton<HistoryStorageService>();
         services.AddSingleton<UpdateService>();
         services.AddTransient<MainWindowViewModel>();
         Services = services.BuildServiceProvider();
@@ -38,6 +39,7 @@ public class App : Application
                 DataContext = Services.GetRequiredService<MainWindowViewModel>()
             };
             desktop.MainWindow = window;
+            desktop.Exit += (_, _) => (window.DataContext as MainWindowViewModel)?.PersistOnExit();
 
             try
             {

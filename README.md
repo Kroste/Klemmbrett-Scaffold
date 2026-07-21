@@ -16,6 +16,9 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
   Snipping Tool/Spectacle) landen im Verlauf — mit Vorschaubild und Auflösung
 - **Zurückkopieren:** Doppelklick auf einen Eintrag legt ihn wieder in die
   Zwischenablage
+- **30-Tage-Verlauf:** Einträge werden beim Beenden gespeichert und beim Start
+  wieder geladen — bis zu 30 Tage zurück. Über der Liste lässt sich der Zeitraum
+  wählen (Heute, Gestern, ein bestimmtes Datum oder alles)
 - **Verlauf leeren:** Ein Klick auf 🧹, weg ist alles
 - **System-Tray:** Der Minimieren-Knopf legt Klemmbrett ins Tray — die
   Überwachung läuft im Hintergrund weiter. Klick aufs Tray-Icon oder
@@ -44,7 +47,9 @@ chmod +x Klemmbrett-*-x86_64.AppImage
 
 Klemmbrett starten und einfach normal arbeiten — jeder kopierte Text und
 jedes kopierte Bild erscheint automatisch im Verlauf (geprüft wird zweimal
-pro Sekunde). Bilder werden als Miniatur mit Auflösung angezeigt.
+pro Sekunde). Bilder werden als Miniatur mit Auflösung angezeigt. Über der Liste wählst du
+mit „Zeitraum" aus, welcher Tag angezeigt wird — „Alle (30 Tage)" zeigt den
+kompletten aufbewahrten Verlauf.
 Doppelklick auf einen Eintrag kopiert ihn zurück in die Zwischenablage,
 der 🧹-Knopf leert den Verlauf. Der Minimieren-Knopf (—) legt Klemmbrett ins System-Tray, wo die
 Überwachung weiterläuft — Klick aufs Tray-Icon holt es zurück. Das
@@ -57,9 +62,14 @@ dann erst, wenn Klemmbrett wieder den Fokus bekommt.
 
 ## Einstellungen
 
-Noch keine — geplant sind maximale Verlaufslänge und Autostart.
+Aufbewahrung fest auf 30 Tage, maximal 200 Einträge. Geplant: konfigurierbare
+Grenzen und Autostart.
 
 ## Logs & Fehlersuche
+
+Der gespeicherte Verlauf liegt unter `%AppData%\Klemmbrett` (Windows) bzw.
+`~/.config/Klemmbrett` (Linux): `history.json` plus `images/` für kopierte
+Bilder. Einträge älter als 30 Tage werden automatisch entfernt.
 
 Logdateien liegen im Unterordner `logs/` neben der Anwendung (Tagesarchiv,
 14 Tage). Bei einem Problem bitte ein Issue mit der aktuellen Logdatei eröffnen —

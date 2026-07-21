@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private readonly ClipboardHistoryService _history;
     private readonly ClipboardMonitorService _monitor;
+    private readonly HistoryStorageService _storage;
     private readonly UpdateService _updateService;
     private IClipboard? _clipboard;
 
@@ -27,16 +29,31 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private IClipboardEntry? _selectedEntry;
 
+    [ObservableProperty]
+    private DayOption? _selectedDay;
+
+    /// <summary>Gefilterte Sicht auf den Verlauf (abhängig vom Tagesfilter).</summary>
     public ObservableCollection<IClipboardEntry> Entries { get; } = [];
+
+    public ObservableCollection<DayOption> Days { get; } = [];
 
     public MainWindowViewModel(
         ClipboardHistoryService history,
         ClipboardMonitorService monitor,
+        HistoryStorageService storage,
         UpdateService updateService)
     {
         _history = history;
         _monitor = monitor;
+        _storage = storage;
         _updateService = updateService;
+
+        // Gespeicherten Verlauf (bis 30 Tage) laden
+        foreach (var entry in _storage.Load().AsEnumerable().Reverse())
+            _history.Add(entry); // Add dreht die Reihenfolge wieder um (neueste vorn)
+        RebuildDays();
+        SelectedDay = Days.FirstOrDefault();
+
         _monitor.EntryCaptured += OnEntryCaptured;
         _ = CheckForUpdateAsync(); // nicht blockierend (Kroste-Standard)
     }
@@ -48,15 +65,37 @@ public partial class MainWindowViewModel : ViewModelBase
         _monitor.Start(topLevel);
     }
 
+    /// <summary>Beim App-Ende aufgerufen — persistiert den Index.</summary>
+    public void PersistOnExit() => _storage.SaveIndex(_history.Entries);
+
     private void OnEntryCaptured(IClipboardEntry entry)
     {
-        var existing = Entries.FirstOrDefault(e => e.DedupeKey == entry.DedupeKey);
-        if (existing is not null)
-            Entries.Remove(existing); // Duplikat nach vorn spiegeln (wie im Service)
-        Entries.Insert(0, entry);
-        while (Entries.Count > _history.MaxEntries)
-            Entries.RemoveAt(Entries.Count - 1);
-        StatusText = $"{Entries.Count} Einträge";
+        if (entry is ImageClipboardEntry image)
+            _storage.EnsureImageSaved(image);
+        _storage.SaveIndex(_history.Entries); // Index ist klein — sofort sichern
+
+        RebuildDays();
+        RebuildEntries();
+        StatusText = $"{_history.Entries.Count} Einträge";
+    }
+
+    partial void OnSelectedDayChanged(DayOption? value) => RebuildEntries();
+
+    private void RebuildDays()
+    {
+        var current = SelectedDay;
+        var options = HistoryDayFilter.BuildDayOptions(_history.Entries, DateOnly.FromDateTime(DateTime.Now));
+        Days.Clear();
+        foreach (var o in options)
+            Days.Add(o);
+        SelectedDay = options.FirstOrDefault(o => o.Date == current?.Date) ?? options.First();
+    }
+
+    private void RebuildEntries()
+    {
+        Entries.Clear();
+        foreach (var entry in _history.Entries.Where(e => HistoryDayFilter.Matches(e, SelectedDay)))
+            Entries.Add(entry);
     }
 
     [RelayCommand]
@@ -86,7 +125,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Log.Info("Nutzeraktion: Historie leeren");
         _history.Clear();
-        Entries.Clear();
+        _storage.SaveIndex(_history.Entries); // leert Index + räumt Bilddateien ab
+        RebuildDays();
+        RebuildEntries();
         StatusText = "Historie geleert";
     }
 

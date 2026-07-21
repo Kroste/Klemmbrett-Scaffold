@@ -9,13 +9,17 @@ public interface IClipboardEntry
 {
     /// <summary>Schlüssel für Deduplizierung (gleicher Inhalt = gleicher Key).</summary>
     string DedupeKey { get; }
+
+    /// <summary>Zeitpunkt der (letzten) Erfassung — Basis für Tagesfilter und 30-Tage-Aufbewahrung.</summary>
+    DateTimeOffset CapturedAt { get; }
 }
 
 public sealed class TextClipboardEntry : IClipboardEntry
 {
-    public TextClipboardEntry(string text)
+    public TextClipboardEntry(string text, DateTimeOffset? capturedAt = null)
     {
         Text = text;
+        CapturedAt = capturedAt ?? DateTimeOffset.Now;
         var firstLine = text.AsSpan().TrimStart();
         var nl = firstLine.IndexOfAny('\r', '\n');
         if (nl >= 0) firstLine = firstLine[..nl];
@@ -28,21 +32,25 @@ public sealed class TextClipboardEntry : IClipboardEntry
     /// <summary>Einzeilige Kurzform für die Listenanzeige.</summary>
     public string Preview { get; }
 
+    public DateTimeOffset CapturedAt { get; }
+
     public string DedupeKey => "T:" + Text;
 }
 
 public sealed class ImageClipboardEntry : IClipboardEntry
 {
-    public ImageClipboardEntry(Bitmap bitmap, string contentHash)
+    public ImageClipboardEntry(Bitmap bitmap, string contentHash, DateTimeOffset? capturedAt = null)
     {
         Bitmap = bitmap;
         ContentHash = contentHash;
+        CapturedAt = capturedAt ?? DateTimeOffset.Now;
         Info = $"Bild {bitmap.PixelSize.Width}×{bitmap.PixelSize.Height}";
     }
 
     public Bitmap Bitmap { get; }
     public string ContentHash { get; }
     public string Info { get; }
+    public DateTimeOffset CapturedAt { get; }
 
     public string DedupeKey => "I:" + ContentHash;
 

@@ -11,6 +11,11 @@
         Background="{DynamicResource KrosteBackgroundBrush}">
     <DockPanel>
         <controls:TitleBar DockPanel.Dock="Top" Title="Klemmbrett" />
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="12,10,12,0">
+            <TextBlock Text="Zeitraum:" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Days}" SelectedItem="{Binding SelectedDay}"
+                      MinWidth="170" />
+        </StackPanel>
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="12,8,12,12">
             <Button Content="🧹 Historie leeren" Command="{Binding ClearHistoryCommand}" />
             <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />

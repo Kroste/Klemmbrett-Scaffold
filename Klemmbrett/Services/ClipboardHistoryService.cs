@@ -11,7 +11,7 @@ public sealed class ClipboardHistoryService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly List<IClipboardEntry> _entries = [];
 
-    public int MaxEntries { get; init; } = 100;
+    public int MaxEntries { get; init; } = 200;
 
     public IReadOnlyList<IClipboardEntry> Entries => _entries;
 
