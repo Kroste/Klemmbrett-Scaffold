@@ -1,4 +1,6 @@
+using System;
 using Avalonia.Controls;
+using Avalonia.Platform;
 
 namespace Klemmbrett.Views;
 
@@ -16,5 +18,13 @@ public class ChromeWindow : Window
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = -1;
         CanResize = true;
+        try
+        {
+            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Klemmbrett/Assets/Klemmbrett.png")));
+        }
+        catch
+        {
+            // Ohne Icon lauffaehig bleiben (z.B. falls Asset fehlt)
+        }
     }
 }

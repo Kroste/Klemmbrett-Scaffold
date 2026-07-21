@@ -1,5 +1,6 @@
 using System;
 using Avalonia;
+using Avalonia.Media;
 using Klemmbrett.Logging;
 using NLog;
 
@@ -43,9 +44,24 @@ internal static class Program
         }
     }
 
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<App>()
+    public static AppBuilder BuildAvaloniaApp()
+    {
+        // Farb-Emojis (🧹 …) brauchen einen expliziten Fallback auf den
+        // Color-Emoji-Font des Systems, sonst erscheinen sie einfarbig.
+        var emojiFont = OperatingSystem.IsWindows() ? "Segoe UI Emoji"
+            : OperatingSystem.IsMacOS() ? "Apple Color Emoji"
+            : "Noto Color Emoji";
+
+        return AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .With(new FontManagerOptions
+            {
+                // WithInterFont() setzt die Default-Familie ueber FontManagerOptions;
+                // da wir die Options ersetzen, muss Inter erneut angegeben werden:
+                DefaultFamilyName = "fonts:Inter#Inter",
+                FontFallbacks = [new FontFallback { FontFamily = new FontFamily(emojiFont) }]
+            })
             .LogToTrace();
+    }
 }

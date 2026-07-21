@@ -24,6 +24,14 @@
   Bekannte Kosten: Hash-Encoding läuft pro Poll, solange ein Bild anliegt —
   bei Bedarf Optimierung über selteneres Bild-Polling
 
+- System-Tray nach Kroste-Muster: `TrayIcon` + `NativeMenu` (Anzeigen/Beenden),
+  `ShutdownMode.OnExplicitShutdown` (sonst beendet das Verstecken des letzten
+  Fensters die App!), `OnClosing` → Cancel + Hide; Fallback ohne Tray = normales
+  Beenden. Eigenes App-Icon (Assets/Klemmbrett.png+.ico, AvaloniaResource +
+  ApplicationIcon), ChromeWindow lädt es als Fenster-Icon.
+- Farb-Emoji-Fallback in Program.cs aktiv (🧹-Button) — Inter muss in
+  FontManagerOptions erneut gesetzt werden.
+
 ## Roadmap
 
 - [Geplante Features in Reihenfolge]
