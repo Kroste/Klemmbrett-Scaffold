@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -34,6 +35,20 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private bool _updateAvailable;
+
+    [ObservableProperty]
+    private string _updateText = string.Empty;
+
+    [ObservableProperty]
+    private bool _updateInProgress;
+
+    [ObservableProperty]
+    private double _updateProgress;
+
+    private UpdateCheckResult? _pendingUpdate;
 
     /// <summary>Gefilterte Sicht auf den Verlauf (abhängig vom Tagesfilter).</summary>
     public ObservableCollection<IClipboardEntry> Entries { get; } = [];
@@ -165,7 +180,63 @@ public partial class MainWindowViewModel : ViewModelBase
     private async Task CheckForUpdateAsync()
     {
         var result = await _updateService.CheckForUpdateAsync();
-        if (result?.UpdateAvailable == true)
-            StatusText = $"Update verfügbar: v{result.Latest}";
+        if (result?.UpdateAvailable != true)
+            return;
+
+        _pendingUpdate = result;
+        UpdateAvailable = true;
+        UpdateText = result.AssetUrl is not null
+            ? $"Version {result.Latest} verfügbar"
+            : $"Version {result.Latest} verfügbar (manueller Download)";
+    }
+
+    /// <summary>Lädt das Update und startet den Austausch — mit Nutzer-Zustimmung (Button).</summary>
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        if (_pendingUpdate is not { } update)
+            return;
+
+        // Kein passendes Asset → Release-Seite öffnen statt Self-Update
+        if (update.AssetUrl is null)
+        {
+            OpenReleasePage(update.ReleaseUrl);
+            return;
+        }
+
+        UpdateInProgress = true;
+        UpdateText = $"Lade Version {update.Latest}…";
+        var progress = new Progress<double>(p =>
+        {
+            UpdateProgress = p;
+            UpdateText = $"Lade Version {update.Latest}… {p:P0}";
+        });
+
+        var ok = await _updateService.DownloadAndApplyAsync(update, progress);
+        if (ok)
+        {
+            UpdateText = "Update wird installiert — App startet neu";
+            PersistOnExit(); // Verlauf sichern, bevor der Austausch-Prozess uns beendet
+            if (Avalonia.Application.Current?.ApplicationLifetime
+                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+                desktop.Shutdown();
+        }
+        else
+        {
+            UpdateInProgress = false;
+            OpenReleasePage(update.ReleaseUrl); // Fallback
+        }
+    }
+
+    private void OpenReleasePage(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Release-Seite konnte nicht geöffnet werden");
+        }
     }
 }

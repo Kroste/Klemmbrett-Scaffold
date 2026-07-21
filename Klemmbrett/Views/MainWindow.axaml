@@ -12,8 +12,23 @@
     <DockPanel>
         <controls:TitleBar DockPanel.Dock="Top" Title="Klemmbrett" />
 
+        <Border DockPanel.Dock="Top" IsVisible="{Binding UpdateAvailable}"
+                Background="{DynamicResource KrosteAccentBrush}" Padding="12,8">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding UpdateText}"
+                               Foreground="{DynamicResource KrosteGoldBrush}" FontWeight="SemiBold" />
+                    <ProgressBar Margin="0,4,0,0" Height="4" Maximum="1"
+                                 Value="{Binding UpdateProgress}" IsVisible="{Binding UpdateInProgress}" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="Aktualisieren"
+                        Command="{Binding InstallUpdateCommand}"
+                        IsEnabled="{Binding !UpdateInProgress}" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
         <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="12,10,12,0">
-            <TextBox x:Name="SearchBox" Text="{Binding SearchText}" Watermark="Suchen… (Strg+F)" />
+            <TextBox x:Name="SearchBox" Text="{Binding SearchText}" PlaceholderText="Suchen… (Strg+F)" />
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="Zeitraum:" VerticalAlignment="Center" />
                 <ComboBox ItemsSource="{Binding Days}" SelectedItem="{Binding SelectedDay}" MinWidth="170" />

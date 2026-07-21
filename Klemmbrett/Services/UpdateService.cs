@@ -1,8 +1,12 @@
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +15,9 @@ using NLog;
 namespace Klemmbrett.Services;
 
 /// <summary>
-/// Update-Check gegen GitHub Releases (Kroste-Standard, siehe autoupdate-Referenz):
-/// proxy-aware, nicht blockierend, max. 1 Check pro App-Start, nie silent installieren.
+/// Update-Check und Self-Update gegen GitHub Releases (Kroste-Standard, siehe
+/// autoupdate-Referenz): proxy-aware, nicht blockierend, max. 1 Check pro
+/// App-Start, nie silent installieren. Download + Austausch mit Nutzer-Zustimmung.
 /// </summary>
 public sealed class UpdateService
 {
@@ -30,7 +35,7 @@ public sealed class UpdateService
             Proxy = WebRequest.DefaultWebProxy,
             DefaultProxyCredentials = CredentialCache.DefaultCredentials
         };
-        _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+        _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("Klemmbrett-UpdateCheck"); // GitHub-API-Pflicht
         _http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
     }
@@ -63,8 +68,9 @@ public sealed class UpdateService
             response.EnsureSuccessStatusCode();
 
             using var json = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(ct));
-            var tag = json.RootElement.GetProperty("tag_name").GetString();
-            var htmlUrl = json.RootElement.GetProperty("html_url").GetString() ?? "";
+            var root = json.RootElement;
+            var tag = root.GetProperty("tag_name").GetString();
+            var htmlUrl = root.GetProperty("html_url").GetString() ?? "";
 
             var latest = ParseVersion(tag);
             if (latest is null)
@@ -73,9 +79,13 @@ public sealed class UpdateService
                 return null;
             }
 
-            _cached = new UpdateCheckResult(CurrentVersion, latest, latest > CurrentVersion, htmlUrl);
-            Log.Info("Update-Check fertig in {Ms} ms: aktuell {Current}, neueste {Latest}, Update: {Available}",
-                sw.ElapsedMilliseconds, _cached.Current, _cached.Latest, _cached.UpdateAvailable);
+            // Passendes Asset für die laufende Plattform heraussuchen
+            var (assetName, assetUrl) = SelectAsset(root);
+
+            _cached = new UpdateCheckResult(CurrentVersion, latest, latest > CurrentVersion,
+                htmlUrl, assetName, assetUrl);
+            Log.Info("Update-Check fertig in {Ms} ms: aktuell {Current}, neueste {Latest}, Update: {Available}, Asset: {Asset}",
+                sw.ElapsedMilliseconds, _cached.Current, _cached.Latest, _cached.UpdateAvailable, assetName ?? "—");
             return _cached;
         }
         catch (Exception ex)
@@ -84,6 +94,151 @@ public sealed class UpdateService
             return null;
         }
     }
+
+    /// <summary>Wählt aus den Release-Assets das für die laufende Plattform passende
+    /// (win-x64.zip unter Windows, x86_64.AppImage bzw. linux-x64.tar.gz unter Linux).</summary>
+    private static (string? name, string? url) SelectAsset(JsonElement release)
+    {
+        if (!release.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
+            return (null, null);
+
+        bool Match(string name) => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? name.Contains("win-x64", StringComparison.OrdinalIgnoreCase) && name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+            : name.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase)
+              || (name.Contains("linux-x64", StringComparison.OrdinalIgnoreCase) && name.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase));
+
+        foreach (var a in assets.EnumerateArray())
+        {
+            var name = a.GetProperty("name").GetString();
+            if (name is not null && Match(name))
+                return (name, a.GetProperty("browser_download_url").GetString());
+        }
+        return (null, null);
+    }
+
+    /// <summary>
+    /// Lädt das Update-Asset herunter, entpackt es neben die laufende App und startet
+    /// einen Austausch-Prozess, der die App beendet, die Dateien ersetzt und neu startet.
+    /// Gibt false zurück, wenn kein Self-Update möglich ist (dann Release-Seite öffnen).
+    /// </summary>
+    public async Task<bool> DownloadAndApplyAsync(UpdateCheckResult update,
+        IProgress<double>? progress = null, CancellationToken ct = default)
+    {
+        if (update.AssetUrl is null || update.AssetName is null)
+        {
+            Log.Warn("Kein passendes Update-Asset für diese Plattform — Self-Update nicht möglich");
+            return false;
+        }
+
+        try
+        {
+            var appDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            var work = Path.Combine(Path.GetTempPath(), "Klemmbrett-update-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(work);
+            var assetPath = Path.Combine(work, update.AssetName);
+
+            Log.Info("Lade Update herunter: {Asset}", update.AssetName);
+            await DownloadWithProgressAsync(update.AssetUrl, assetPath, progress, ct);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return ApplyWindows(assetPath, work, appDir);
+            return ApplyLinux(assetPath, appDir);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Self-Update fehlgeschlagen");
+            return false;
+        }
+    }
+
+    private async Task DownloadWithProgressAsync(string url, string dest,
+        IProgress<double>? progress, CancellationToken ct)
+    {
+        using var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        resp.EnsureSuccessStatusCode();
+        var total = resp.Content.Headers.ContentLength ?? -1L;
+
+        await using var src = await resp.Content.ReadAsStreamAsync(ct);
+        await using var dst = File.Create(dest);
+        var buffer = new byte[81920];
+        long read = 0;
+        int n;
+        while ((n = await src.ReadAsync(buffer, ct)) > 0)
+        {
+            await dst.WriteAsync(buffer.AsMemory(0, n), ct);
+            read += n;
+            if (total > 0) progress?.Report((double)read / total);
+        }
+        Log.Debug("Download fertig: {Bytes} Bytes", read);
+    }
+
+    /// <summary>Windows: ZIP daneben entpacken, .bat schreibt nach App-Ende die Dateien um und startet neu.</summary>
+    private bool ApplyWindows(string zipPath, string work, string appDir)
+    {
+        var extract = Path.Combine(work, "extracted");
+        ZipFile.ExtractToDirectory(zipPath, extract);
+
+        var pid = Environment.ProcessId;
+        var exe = Path.Combine(appDir, "Klemmbrett.exe");
+        var bat = Path.Combine(work, "apply.bat");
+        // Wartet auf App-Ende, kopiert rüber, startet neu, räumt sich selbst weg.
+        File.WriteAllText(bat, $"""
+            @echo off
+            :wait
+            tasklist /FI "PID eq {pid}" 2>NUL | find "{pid}" >NUL && (timeout /t 1 /nobreak >NUL & goto wait)
+            xcopy /E /Y /I "{extract}\*" "{appDir}\" >NUL
+            start "" "{exe}"
+            rmdir /S /Q "{work}"
+            """);
+
+        Process.Start(new ProcessStartInfo("cmd.exe", $"/c \"{bat}\"") { CreateNoWindow = true, UseShellExecute = false });
+        Log.Info("Windows-Update vorbereitet — App wird für den Austausch beendet");
+        return true;
+    }
+
+    /// <summary>Linux: AppImage ersetzt sich selbst (eine Datei), tar.gz wird entpackt; Neustart via sh.</summary>
+    private bool ApplyLinux(string assetPath, string appDir)
+    {
+        var runningAppImage = Environment.GetEnvironmentVariable("APPIMAGE");
+        var pid = Environment.ProcessId;
+        var sh = Path.Combine(Path.GetTempPath(), $"klemmbrett-update-{Guid.NewGuid():N}.sh");
+
+        string body;
+        if (assetPath.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase) && runningAppImage is not null)
+        {
+            // Laufendes AppImage durch das neue ersetzen und neu starten
+            body = $"""
+                #!/bin/sh
+                while kill -0 {pid} 2>/dev/null; do sleep 1; done
+                chmod +x "{assetPath}"
+                mv -f "{assetPath}" "{runningAppImage}"
+                "{runningAppImage}" &
+                """;
+        }
+        else if (assetPath.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
+        {
+            var exe = Path.Combine(appDir, "Klemmbrett");
+            body = $"""
+                #!/bin/sh
+                while kill -0 {pid} 2>/dev/null; do sleep 1; done
+                tar -xzf "{assetPath}" -C "{appDir}"
+                chmod +x "{exe}"
+                "{exe}" &
+                """;
+        }
+        else
+        {
+            Log.Warn("Linux-Update: unerwartetes Asset ({Asset}) oder kein laufendes AppImage", Path.GetFileName(assetPath));
+            return false;
+        }
+
+        File.WriteAllText(sh, body);
+        Process.Start(new ProcessStartInfo("/bin/sh", $"\"{sh}\"") { UseShellExecute = false });
+        Log.Info("Linux-Update vorbereitet — App wird für den Austausch beendet");
+        return true;
+    }
 }
 
-public sealed record UpdateCheckResult(Version Current, Version Latest, bool UpdateAvailable, string ReleaseUrl);
+public sealed record UpdateCheckResult(
+    Version Current, Version Latest, bool UpdateAvailable, string ReleaseUrl,
+    string? AssetName = null, string? AssetUrl = null);

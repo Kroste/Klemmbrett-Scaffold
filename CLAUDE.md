@@ -32,6 +32,13 @@
   sonst sammelt der GC das Tray-Icon ein! Fallback ohne Tray = Minimieren normal.
   Eigenes App-Icon (Assets/Klemmbrett.png+.ico, AvaloniaResource +
   ApplicationIcon), ChromeWindow lädt es als Fenster-Icon.
+- Auto-Update (`UpdateService`): Check (InformationalVersion vs. Release-Tag,
+  proxy-aware, 1×/Start) plus Self-Update: passendes Asset je Plattform
+  (win-x64.zip / .AppImage / linux-x64.tar.gz), Download mit Fortschritt,
+  Austausch über Helfer-Skript (Windows .bat, Linux .sh) das auf App-Ende
+  wartet, Dateien ersetzt und neu startet. AppImage ersetzt sich per $APPIMAGE
+  selbst. Ohne passendes Asset → Release-Seite öffnen. Update-Leiste im
+  MainWindow (InstallUpdateCommand), PersistOnExit vor dem Neustart.
 - Farb-Emoji-Fallback in Program.cs aktiv (🧹-Button) — Inter muss in
   FontManagerOptions erneut gesetzt werden.
 - 30-Tage-Persistenz (`HistoryStorageService`): history.json als Index (atomar
