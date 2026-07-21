@@ -10,8 +10,10 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
 
 ## Features
 
-- **Zwischenablage-Verlauf:** Merkt sich kopierte Texte (neuester zuerst,
-  Duplikate wandern nach vorn statt doppelt zu erscheinen)
+- **Automatische Überwachung:** Alles, was mit Strg+C kopiert wird, erscheint
+  sofort im Verlauf (neuester Eintrag oben; Duplikate wandern nach vorn)
+- **Zurückkopieren:** Doppelklick auf einen Eintrag legt ihn wieder in die
+  Zwischenablage
 - **Verlauf leeren:** Ein Klick, weg ist alles
 - 🔄 **Update-Check:** Prüft GitHub-Releases (proxy-fähig) und meldet neue Versionen
 
@@ -35,9 +37,15 @@ chmod +x Klemmbrett-*-x86_64.AppImage
 
 ## Bedienung
 
-Klemmbrett starten — der Verlauf füllt sich, sobald Texte kopiert werden.
-Die Liste zeigt den neuesten Eintrag oben. „Historie leeren" entfernt alle
-Einträge; die Statuszeile unten meldet Aktionen und verfügbare Updates.
+Klemmbrett starten und einfach normal arbeiten — jeder mit Strg+C kopierte
+Text erscheint automatisch im Verlauf (geprüft wird zweimal pro Sekunde).
+Doppelklick auf einen Eintrag kopiert ihn zurück in die Zwischenablage,
+„Historie leeren" entfernt alle Einträge. Die Statuszeile unten meldet
+Aktionen und verfügbare Updates.
+
+Hinweis für Linux/Wayland: Aus Sicherheitsgründen erlaubt Wayland das Lesen
+der Zwischenablage teils nur bei fokussiertem Fenster — Einträge erscheinen
+dann erst, wenn Klemmbrett wieder den Fokus bekommt.
 
 ## Einstellungen
 

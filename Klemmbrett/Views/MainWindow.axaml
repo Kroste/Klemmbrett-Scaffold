@@ -15,6 +15,8 @@
             <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
         </StackPanel>
         <ListBox Margin="12,12,12,0" ItemsSource="{Binding Entries}"
+                 SelectedItem="{Binding SelectedEntry}"
+                 DoubleTapped="OnEntryDoubleTapped"
                  Background="{DynamicResource KrosteSurfaceBrush}" />
     </DockPanel>
 </views:ChromeWindow>

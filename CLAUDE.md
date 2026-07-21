@@ -10,7 +10,12 @@
 
 ## Aktueller Stand
 
-- [Was funktioniert, welche Version, was zuletzt gebaut wurde]
+- Grundgerüst nach Kroste-Standards, Build grün, 19 Tests
+- Clipboard-Überwachung: `ClipboardMonitorService` pollt per DispatcherTimer
+  (500 ms) — Avalonia hat kein Clipboard-Change-Event. Lesen via
+  `TryGetTextAsync()`-Extension (Avalonia 12: `GetTextAsync` existiert nicht mehr)
+- Doppelklick auf Eintrag = Zurückkopieren (`NoteOwnWrite` verhindert
+  Selbst-Erfassung); Wayland liest teils nur bei Fokus
 
 ## Roadmap
 

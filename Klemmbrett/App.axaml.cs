@@ -22,6 +22,7 @@ public class App : Application
     {
         var services = new ServiceCollection();
         services.AddSingleton<ClipboardHistoryService>();
+        services.AddSingleton<ClipboardMonitorService>();
         services.AddSingleton<UpdateService>();
         services.AddTransient<MainWindowViewModel>();
         Services = services.BuildServiceProvider();
