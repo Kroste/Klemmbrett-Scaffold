@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Klemmbrett/Klemmbrett.csproj" />
+  <Project Path="Klemmbrett.Tests/Klemmbrett.Tests.csproj" />
+</Solution>

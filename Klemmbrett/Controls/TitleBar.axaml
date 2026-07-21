@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:chrome="using:Avalonia.Controls.Chrome"
+             x:Class="Klemmbrett.Controls.TitleBar"
+             Height="36">
+    <!-- ElementRole ist der Avalonia-12-Mechanismus für Custom-Chrome-Hit-Testing:
+         TitleBar = OS übernimmt Drag + Doppelklick-Maximieren nativ,
+         Button-Rollen = Eingabe wird an die Avalonia-Buttons durchgereicht
+         (Windows 11 zeigt am MaximizeButton sogar Snap-Layouts).
+         Ohne Rollen schluckt die Caption-Zone Klicks und Drag! -->
+    <Border x:Name="Bar"
+            Background="{DynamicResource KrosteTitleBarBrush}"
+            chrome:WindowDecorationProperties.ElementRole="TitleBar">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+            <TextBlock x:Name="TitleText"
+                       Margin="12,0" VerticalAlignment="Center"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource KrosteGoldBrush}" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button x:Name="MinButton" Classes="chrome" Content="—"
+                        chrome:WindowDecorationProperties.ElementRole="MinimizeButton" />
+                <Button x:Name="MaxButton" Classes="chrome" Content="❐"
+                        chrome:WindowDecorationProperties.ElementRole="MaximizeButton" />
+                <Button x:Name="CloseButton" Classes="chrome close" Content="✕"
+                        chrome:WindowDecorationProperties.ElementRole="CloseButton" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

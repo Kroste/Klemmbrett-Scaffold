@@ -1,0 +1,20 @@
+<views:ChromeWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Klemmbrett.ViewModels"
+        xmlns:views="using:Klemmbrett.Views"
+        xmlns:controls="using:Klemmbrett.Controls"
+        x:Class="Klemmbrett.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Klemmbrett"
+        Width="480" Height="640"
+        Background="{DynamicResource KrosteBackgroundBrush}">
+    <DockPanel>
+        <controls:TitleBar DockPanel.Dock="Top" Title="Klemmbrett" />
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="12,8,12,12">
+            <Button Content="Historie leeren" Command="{Binding ClearHistoryCommand}" />
+            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
+        </StackPanel>
+        <ListBox Margin="12,12,12,0" ItemsSource="{Binding Entries}"
+                 Background="{DynamicResource KrosteSurfaceBrush}" />
+    </DockPanel>
+</views:ChromeWindow>

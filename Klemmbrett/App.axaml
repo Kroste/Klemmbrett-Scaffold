@@ -1,0 +1,38 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:Klemmbrett"
+             x:Class="Klemmbrett.App"
+             RequestedThemeVariant="Dark">
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <!-- Kroste-Palette (etabliert in Amtsschimmel/Checkmk Cockpit) -->
+        <SolidColorBrush x:Key="KrosteBackgroundBrush" Color="#1A1D21" />
+        <SolidColorBrush x:Key="KrosteTitleBarBrush" Color="#14161A" />
+        <SolidColorBrush x:Key="KrosteSurfaceBrush" Color="#22262B" />
+        <SolidColorBrush x:Key="KrosteAccentBrush" Color="#123E6B" />
+        <SolidColorBrush x:Key="KrosteGoldBrush" Color="#E0B14C" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+        <!-- Fensterbuttons der Titelleiste -->
+        <Style Selector="Button.chrome">
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.chrome:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#2A2E33" />
+        </Style>
+        <Style Selector="Button.chrome.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#C42B1C" />
+        </Style>
+    </Application.Styles>
+</Application>

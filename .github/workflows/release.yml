@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+# Muster aus NetScanner/Checkmk Cockpit/Amtsschimmel: native Builds pro OS,
+# Release-Job sammelt die Artefakte ein.
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+      - name: Publish
+        run: >
+          dotnet publish Klemmbrett/Klemmbrett.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -o publish
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path publish/* -DestinationPath Klemmbrett-${{ github.ref_name }}-win-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-x64
+          path: Klemmbrett-*.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+      - name: Publish
+        run: >
+          dotnet publish Klemmbrett/Klemmbrett.csproj
+          -c Release -r linux-x64 --self-contained true
+          -p:PublishSingleFile=true -o publish
+      - name: Tarball
+        run: tar -czf Klemmbrett-${{ github.ref_name }}-linux-x64.tar.gz -C publish .
+      # Optional: AppImage-Packaging wie in Amtsschimmel (appimagetool),
+      # aktivieren wenn die App als AppImage verteilt werden soll.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: Klemmbrett-*.tar.gz
+
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Klemmbrett-*.zip
+            Klemmbrett-*.tar.gz
+          generate_release_notes: true

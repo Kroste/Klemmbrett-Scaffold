@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Klemmbrett (Debug)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Klemmbrett/bin/Debug/net10.0/Klemmbrett.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Klemmbrett",
+      "console": "internalConsole",
+      "stopAtEntry": false,
+      "env": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": "Klemmbrett (Attach)",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}
