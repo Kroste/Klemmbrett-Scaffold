@@ -14,7 +14,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # MinVer braucht die Historie inkl. Tags
 
@@ -49,7 +49,7 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path publish/win-x64/* -DestinationPath "Klemmbrett-${{ steps.ver.outputs.v }}-win-x64.zip"
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: windows
           path: Klemmbrett-*-win-x64.zip
@@ -58,7 +58,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -94,7 +94,7 @@ jobs:
       - name: AppImage bauen
         run: bash packaging/linux/build-appimage.sh "${{ steps.ver.outputs.v }}" publish/linux-x64
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: linux
           path: |
@@ -108,12 +108,12 @@ jobs:
     # Beim manuellen Start (workflow_dispatch ohne Tag) ueberspringen.
     if: github.ref_type == 'tag'
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           path: dist
 
       - name: GitHub-Release anlegen/aktualisieren
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/**/*
           generate_release_notes: true

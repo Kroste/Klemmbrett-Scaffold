@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Klemmbrett
+Comment=Clipboard-Manager fuer den Desktop
+Exec=Klemmbrett
+Icon=Klemmbrett
+Type=Application
+Categories=Utility;
+Terminal=false
