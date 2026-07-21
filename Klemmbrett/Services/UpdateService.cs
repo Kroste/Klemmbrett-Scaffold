@@ -181,18 +181,35 @@ public sealed class UpdateService
         var pid = Environment.ProcessId;
         var exe = Path.Combine(appDir, "Klemmbrett.exe");
         var bat = Path.Combine(work, "apply.bat");
-        // Wartet auf App-Ende, kopiert rüber, startet neu, räumt sich selbst weg.
-        File.WriteAllText(bat, $"""
-            @echo off
-            :wait
-            tasklist /FI "PID eq {pid}" 2>NUL | find "{pid}" >NUL && (timeout /t 1 /nobreak >NUL & goto wait)
-            xcopy /E /Y /I "{extract}\*" "{appDir}\" >NUL
-            start "" "{exe}"
-            rmdir /S /Q "{work}"
-            """);
+        var log = Path.Combine(work, "update.log");
 
-        Process.Start(new ProcessStartInfo("cmd.exe", $"/c \"{bat}\"") { CreateNoWindow = true, UseShellExecute = false });
-        Log.Info("Windows-Update vorbereitet — App wird für den Austausch beendet");
+        // WICHTIG: Batch-Zeilen OHNE führende Einrückung schreiben — ein eingerücktes
+        // ":wait"-Label ist für cmd.exe kein gültiges Sprungziel, dann läuft xcopy
+        // los, während die alte App die Dateien noch sperrt (→ alte Version startet neu).
+        // /WAIT auf den PID-Prozess ist zuverlässiger als eine tasklist-Schleife.
+        var lines = new[]
+        {
+            "@echo off",
+            $"echo Warte auf Prozess {pid} >\"{log}\"",
+            // Auf das Ende des alten Prozesses warten (blockiert, bis PID weg ist):
+            $"powershell -NoProfile -Command \"try {{ Wait-Process -Id {pid} -ErrorAction Stop }} catch {{}}\" >>\"{log}\" 2>&1",
+            // Kurzer Nachlauf, damit Dateihandles sicher freigegeben sind:
+            "ping 127.0.0.1 -n 2 >NUL",
+            $"echo Kopiere Dateien >>\"{log}\"",
+            $"xcopy /E /Y /I /Q \"{extract}\\*\" \"{appDir}\\\" >>\"{log}\" 2>&1",
+            $"echo Starte neu >>\"{log}\"",
+            $"start \"\" \"{exe}\"",
+            // work-Ordner NICHT löschen: enthält das Log für die Fehlersuche.
+        };
+        File.WriteAllLines(bat, lines);
+
+        Process.Start(new ProcessStartInfo("cmd.exe", $"/c \"\"{bat}\"\"")
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            WorkingDirectory = work
+        });
+        Log.Info("Windows-Update vorbereitet (Skript {Bat}) — App wird für den Austausch beendet", bat);
         return true;
     }
 
@@ -206,25 +223,28 @@ public sealed class UpdateService
         string body;
         if (assetPath.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase) && runningAppImage is not null)
         {
-            // Laufendes AppImage durch das neue ersetzen und neu starten
-            body = $"""
-                #!/bin/sh
-                while kill -0 {pid} 2>/dev/null; do sleep 1; done
-                chmod +x "{assetPath}"
-                mv -f "{assetPath}" "{runningAppImage}"
-                "{runningAppImage}" &
-                """;
+            // Laufendes AppImage ersetzen. mv/rm kann fehlschlagen, solange die Datei
+            // als Loop-Device gemountet ist — deshalb erst warten, dann per cp den
+            // Inhalt überschreiben (Inode bleibt, kein "Text file busy").
+            body = string.Join('\n',
+                "#!/bin/sh",
+                $"while kill -0 {pid} 2>/dev/null; do sleep 1; done",
+                "sleep 1",
+                $"chmod +x '{assetPath}'",
+                $"cp -f '{assetPath}' '{runningAppImage}' || mv -f '{assetPath}' '{runningAppImage}'",
+                $"rm -f '{assetPath}'",
+                $"setsid '{runningAppImage}' >/dev/null 2>&1 &");
         }
         else if (assetPath.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
         {
             var exe = Path.Combine(appDir, "Klemmbrett");
-            body = $"""
-                #!/bin/sh
-                while kill -0 {pid} 2>/dev/null; do sleep 1; done
-                tar -xzf "{assetPath}" -C "{appDir}"
-                chmod +x "{exe}"
-                "{exe}" &
-                """;
+            body = string.Join('\n',
+                "#!/bin/sh",
+                $"while kill -0 {pid} 2>/dev/null; do sleep 1; done",
+                "sleep 1",
+                $"tar -xzf '{assetPath}' -C '{appDir}'",
+                $"chmod +x '{exe}'",
+                $"setsid '{exe}' >/dev/null 2>&1 &");
         }
         else
         {

@@ -28,6 +28,7 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
 - **System-Tray:** Der Minimieren-Knopf legt Klemmbrett ins Tray — die
   Überwachung läuft im Hintergrund weiter. Klick aufs Tray-Icon oder
   „Anzeigen" holt das Fenster zurück; das Schließen-✕ beendet die App
+- ⓘ **Über-Fenster:** zeigt die Version und erlaubt eine manuelle Update-Prüfung
 - 🔄 **Auto-Update:** Prüft GitHub-Releases (proxy-fähig); bei einer neuen Version
   erscheint oben eine Leiste — „Aktualisieren" lädt das passende Paket
   (Windows-ZIP bzw. Linux-AppImage/tar.gz), tauscht die App aus und startet neu

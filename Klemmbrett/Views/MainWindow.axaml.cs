@@ -1,6 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Klemmbrett.Services;
 using Klemmbrett.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Klemmbrett.Views;
 
@@ -48,4 +51,10 @@ public partial class MainWindow : ChromeWindow
 
     private void OnEntryDoubleTapped(object? sender, TappedEventArgs e) =>
         (DataContext as MainWindowViewModel)?.CopySelectedCommand.Execute(null);
+
+    private void OnAboutClick(object? sender, RoutedEventArgs e)
+    {
+        var updateService = App.Services.GetService<UpdateService>();
+        new AboutWindow(updateService).ShowDialog(this);
+    }
 }

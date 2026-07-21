@@ -32,12 +32,18 @@
   sonst sammelt der GC das Tray-Icon ein! Fallback ohne Tray = Minimieren normal.
   Eigenes App-Icon (Assets/Klemmbrett.png+.ico, AvaloniaResource +
   ApplicationIcon), ChromeWindow lädt es als Fenster-Icon.
+- AboutWindow (ⓘ-Button in der Bottom-Leiste): Version aus InformationalVersion,
+  manueller Update-Check (ruft UpdateService.CheckForUpdateAsync, gecacht),
+  GitHub/BMC-Links. ChromeWindow + Kroste-Look, ShowDialog(owner).
 - Auto-Update (`UpdateService`): Check (InformationalVersion vs. Release-Tag,
   proxy-aware, 1×/Start) plus Self-Update: passendes Asset je Plattform
   (win-x64.zip / .AppImage / linux-x64.tar.gz), Download mit Fortschritt,
-  Austausch über Helfer-Skript (Windows .bat, Linux .sh) das auf App-Ende
-  wartet, Dateien ersetzt und neu startet. AppImage ersetzt sich per $APPIMAGE
-  selbst. Ohne passendes Asset → Release-Seite öffnen. Update-Leiste im
+  Austausch über Helfer-Skript, das auf App-Ende wartet, ersetzt, neu startet.
+  WICHTIG Windows: Batch-Zeilen OHNE Einrückung (eingerücktes :label bricht goto);
+  Warten via powershell Wait-Process statt tasklist-Schleife; update.log im
+  Work-Ordner. Linux AppImage: cp -f statt mv (Loop-Device gemountet → "busy"),
+  Neustart via setsid. Bekannte Baustelle: end-to-end nur mit echten Releases
+  testbar. Ohne passendes Asset → Release-Seite öffnen. Update-Leiste im
   MainWindow (InstallUpdateCommand), PersistOnExit vor dem Neustart.
 - Farb-Emoji-Fallback in Program.cs aktiv (🧹-Button) — Inter muss in
   FontManagerOptions erneut gesetzt werden.
