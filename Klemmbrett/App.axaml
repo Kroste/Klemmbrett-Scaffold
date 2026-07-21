@@ -34,5 +34,21 @@
         <Style Selector="Button.chrome.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#C42B1C" />
         </Style>
+        <!-- Anheften-Knopf je Listeneintrag -->
+        <Style Selector="ToggleButton.pin">
+            <Setter Property="Content" Value="📌" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ToolTip.Tip" Value="Anheften (bleibt oben, läuft nicht ab)" />
+        </Style>
+        <Style Selector="ToggleButton.pin:checked">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="ToggleButton.pin:pointerover">
+            <Setter Property="Opacity" Value="0.8" />
+        </Style>
     </Application.Styles>
 </Application>

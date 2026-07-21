@@ -12,6 +12,9 @@ public interface IClipboardEntry
 
     /// <summary>Zeitpunkt der (letzten) Erfassung — Basis für Tagesfilter und 30-Tage-Aufbewahrung.</summary>
     DateTimeOffset CapturedAt { get; }
+
+    /// <summary>Angeheftet: bleibt oben und ist von der 30-Tage-Aufbewahrung ausgenommen.</summary>
+    bool IsPinned { get; set; }
 }
 
 public sealed class TextClipboardEntry : IClipboardEntry
@@ -34,6 +37,8 @@ public sealed class TextClipboardEntry : IClipboardEntry
 
     public DateTimeOffset CapturedAt { get; }
 
+    public bool IsPinned { get; set; }
+
     public string DedupeKey => "T:" + Text;
 }
 
@@ -51,6 +56,8 @@ public sealed class ImageClipboardEntry : IClipboardEntry
     public string ContentHash { get; }
     public string Info { get; }
     public DateTimeOffset CapturedAt { get; }
+
+    public bool IsPinned { get; set; }
 
     public string DedupeKey => "I:" + ContentHash;
 

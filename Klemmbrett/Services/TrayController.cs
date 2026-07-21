@@ -71,12 +71,16 @@ public sealed class TrayController
             MinimizeToTray();
     }
 
-    private void MinimizeToTray()
+    /// <summary>Legt das Fenster ins Tray (vom Minimieren-Knopf und vom Schließen-✕ genutzt).</summary>
+    public void MinimizeToTray()
     {
         IsMinimizedToTray = true;
         _window.Hide(); // Hide() schliesst nicht — kein ShutdownMode-Umbau noetig
         Log.Debug("Ins Tray minimiert — Clipboard-Überwachung läuft weiter");
     }
+
+    /// <summary>True, solange ein Tray verfügbar ist (Schließen darf dann ins Tray statt beenden).</summary>
+    public bool IsAvailable => _trayIcon is not null;
 
     private void Restore()
     {

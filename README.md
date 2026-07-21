@@ -16,6 +16,9 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
   Snipping Tool/Spectacle) landen im Verlauf — mit Vorschaubild und Auflösung
 - **Zurückkopieren:** Doppelklick auf einen Eintrag legt ihn wieder in die
   Zwischenablage
+- **Suche:** Textfeld über der Liste filtert den Verlauf live (Strg+F springt hin)
+- **Favoriten:** 📌 an einem Eintrag heftet ihn oben an — angeheftete Einträge
+  laufen nicht nach 30 Tagen ab
 - **30-Tage-Verlauf:** Einträge werden beim Beenden gespeichert und beim Start
   wieder geladen — bis zu 30 Tage zurück. Über der Liste lässt sich der Zeitraum
   wählen (Heute, Gestern, ein bestimmtes Datum oder alles)
@@ -51,7 +54,8 @@ pro Sekunde). Bilder werden als Miniatur mit Auflösung angezeigt. Über der Lis
 mit „Zeitraum" aus, welcher Tag angezeigt wird — „Alle (30 Tage)" zeigt den
 kompletten aufbewahrten Verlauf.
 Doppelklick auf einen Eintrag kopiert ihn zurück in die Zwischenablage,
-der 🧹-Knopf leert den Verlauf. Der Minimieren-Knopf (—) legt Klemmbrett ins System-Tray, wo die
+der 🧹-Knopf leert den Verlauf (angeheftete Einträge bleiben). Mit dem
+Suchfeld (Strg+F) findest du Einträge per Text, mit 📌 heftest du wichtige an. Der Minimieren-Knopf (—) legt Klemmbrett ins System-Tray, wo die
 Überwachung weiterläuft — Klick aufs Tray-Icon holt es zurück. Das
 Schließen-✕ beendet die App. Die Statuszeile unten meldet Aktionen und
 verfügbare Updates.

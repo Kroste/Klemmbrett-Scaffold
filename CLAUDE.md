@@ -41,6 +41,15 @@
   Defekter Index → .broken-Backup statt Löschen. Tagesfilter als UI-freie
   `HistoryDayFilter`-Logik (testbar); `_history.Entries` = Vollbestand,
   `Entries` = gefilterte Sicht für die Liste. MaxEntries 200.
+- Suche: `SearchText` filtert `RebuildEntries` (Text + Bild-Info, case-insensitive),
+  kombiniert mit Tagesfilter. Strg+F fokussiert das Suchfeld, Esc → Tray.
+- Favoriten: `IsPinned` im Modell; gepinnt = oben (Resort: Pin desc, dann Zeit)
+  UND von Retention/MaxEntries ausgenommen; überlebt Storage-Roundtrip.
+  TogglePin-Command je Zeile (📌-ToggleButton).
+- Schließen-✕ → Tray (OnClosing Cancel + TrayController.MinimizeToTray),
+  Fallback ohne Tray = regulär beenden. Kein globaler Hotkey (Avalonia kann
+  nur In-App; systemweit bräuchte Win32/X11/Wayland-Extra) — Tray ist der
+  Hervorhol-Weg.
 
 ## Roadmap
 

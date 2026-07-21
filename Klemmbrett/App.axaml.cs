@@ -19,6 +19,9 @@ public class App : Application
     // Referenz halten, damit TrayController/TrayIcon nicht vom GC eingesammelt werden.
     private TrayController? _trayController;
 
+    /// <summary>Der aktive TrayController (null, wenn kein Tray verfügbar ist).</summary>
+    public static TrayController? Tray => (Current as App)?._trayController;
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()

@@ -11,33 +11,48 @@
         Background="{DynamicResource KrosteBackgroundBrush}">
     <DockPanel>
         <controls:TitleBar DockPanel.Dock="Top" Title="Klemmbrett" />
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="12,10,12,0">
-            <TextBlock Text="Zeitraum:" VerticalAlignment="Center" />
-            <ComboBox ItemsSource="{Binding Days}" SelectedItem="{Binding SelectedDay}"
-                      MinWidth="170" />
+
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="12,10,12,0">
+            <TextBox x:Name="SearchBox" Text="{Binding SearchText}" Watermark="Suchen… (Strg+F)" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Zeitraum:" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding Days}" SelectedItem="{Binding SelectedDay}" MinWidth="170" />
+            </StackPanel>
         </StackPanel>
+
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="12,8,12,12">
             <Button Content="🧹 Historie leeren" Command="{Binding ClearHistoryCommand}" />
             <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
         </StackPanel>
+
         <ListBox Margin="12,12,12,0" ItemsSource="{Binding Entries}"
                  SelectedItem="{Binding SelectedEntry}"
                  DoubleTapped="OnEntryDoubleTapped"
                  Background="{DynamicResource KrosteSurfaceBrush}">
             <ListBox.DataTemplates>
                 <DataTemplate DataType="m:TextClipboardEntry">
-                    <TextBlock Text="{Binding Preview}" TextTrimming="CharacterEllipsis" />
+                    <Grid ColumnDefinitions="Auto,*">
+                        <ToggleButton Grid.Column="0" Classes="pin"
+                                      IsChecked="{Binding IsPinned, Mode=OneWay}"
+                                      Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).TogglePinCommand}"
+                                      CommandParameter="{Binding}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Preview}"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    </Grid>
                 </DataTemplate>
                 <DataTemplate DataType="m:ImageClipboardEntry">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Border Background="{DynamicResource KrosteBackgroundBrush}"
-                                CornerRadius="4" Padding="2">
-                            <Image Source="{Binding Bitmap}" MaxWidth="96" MaxHeight="64"
-                                   Stretch="Uniform" />
+                    <Grid ColumnDefinitions="Auto,Auto,*">
+                        <ToggleButton Grid.Column="0" Classes="pin"
+                                      IsChecked="{Binding IsPinned, Mode=OneWay}"
+                                      Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).TogglePinCommand}"
+                                      CommandParameter="{Binding}" />
+                        <Border Grid.Column="1" Background="{DynamicResource KrosteBackgroundBrush}"
+                                CornerRadius="4" Padding="2" Margin="0,0,10,0">
+                            <Image Source="{Binding Bitmap}" MaxWidth="96" MaxHeight="64" Stretch="Uniform" />
                         </Border>
-                        <TextBlock Text="{Binding Info}" VerticalAlignment="Center"
+                        <TextBlock Grid.Column="2" Text="{Binding Info}" VerticalAlignment="Center"
                                    Foreground="{DynamicResource KrosteGoldBrush}" />
-                    </StackPanel>
+                    </Grid>
                 </DataTemplate>
             </ListBox.DataTemplates>
         </ListBox>

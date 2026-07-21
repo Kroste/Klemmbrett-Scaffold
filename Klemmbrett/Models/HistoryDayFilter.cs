@@ -40,5 +40,5 @@ public static class HistoryDayFilter
            || DateOnly.FromDateTime(entry.CapturedAt.LocalDateTime) == day;
 
     public static bool IsExpired(IClipboardEntry entry, DateTimeOffset now)
-        => entry.CapturedAt < now.AddDays(-RetentionDays);
+        => !entry.IsPinned && entry.CapturedAt < now.AddDays(-RetentionDays);
 }

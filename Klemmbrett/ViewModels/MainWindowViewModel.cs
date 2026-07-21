@@ -32,6 +32,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private DayOption? _selectedDay;
 
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
     /// <summary>Gefilterte Sicht auf den Verlauf (abhängig vom Tagesfilter).</summary>
     public ObservableCollection<IClipboardEntry> Entries { get; } = [];
 
@@ -91,11 +94,39 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedDay = options.FirstOrDefault(o => o.Date == current?.Date) ?? options.First();
     }
 
+    partial void OnSearchTextChanged(string value) => RebuildEntries();
+
     private void RebuildEntries()
     {
+        var needle = SearchText.Trim();
         Entries.Clear();
-        foreach (var entry in _history.Entries.Where(e => HistoryDayFilter.Matches(e, SelectedDay)))
+        foreach (var entry in _history.Entries
+                     .Where(e => HistoryDayFilter.Matches(e, SelectedDay))
+                     .Where(e => MatchesSearch(e, needle)))
             Entries.Add(entry);
+    }
+
+    private static bool MatchesSearch(IClipboardEntry entry, string needle)
+    {
+        if (needle.Length == 0) return true;
+        return entry switch
+        {
+            TextClipboardEntry t => t.Text.Contains(needle, StringComparison.OrdinalIgnoreCase),
+            ImageClipboardEntry i => i.Info.Contains(needle, StringComparison.OrdinalIgnoreCase),
+            _ => false
+        };
+    }
+
+    [RelayCommand]
+    private void TogglePin(IClipboardEntry? entry)
+    {
+        if (entry is null) return;
+        entry.IsPinned = !entry.IsPinned;
+        Log.Info("Nutzeraktion: Eintrag {State}", entry.IsPinned ? "angeheftet" : "gelöst");
+        _history.Resort();
+        _storage.SaveIndex(_history.Entries);
+        RebuildDays();
+        RebuildEntries();
     }
 
     [RelayCommand]
