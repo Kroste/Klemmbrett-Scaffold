@@ -1,7 +1,7 @@
 # Klemmbrett
 
-[![CI](https://github.com/Kroste/Klemmbrett/actions/workflows/ci.yml/badge.svg)](https://github.com/Kroste/Klemmbrett/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/Kroste/Klemmbrett)](https://github.com/Kroste/Klemmbrett/releases)
+[![CI](https://github.com/Kroste/Klemmbrett-Scaffold/actions/workflows/ci.yml/badge.svg)](https://github.com/Kroste/Klemmbrett-Scaffold/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Kroste/Klemmbrett-Scaffold)](https://github.com/Kroste/Klemmbrett-Scaffold/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 10 / Avalonia 12).
@@ -19,7 +19,7 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
 
 ## Installation
 
-Fertige Pakete gibt es auf der [Releases-Seite](https://github.com/Kroste/Klemmbrett/releases):
+Fertige Pakete gibt es auf der [Releases-Seite](https://github.com/Kroste/Klemmbrett-Scaffold/releases):
 
 **Windows:** `Klemmbrett-X.Y.Z-win-x64.zip` herunterladen, entpacken,
 `Klemmbrett.exe` starten. Keine Installation nötig (self-contained, .NET ist enthalten).
