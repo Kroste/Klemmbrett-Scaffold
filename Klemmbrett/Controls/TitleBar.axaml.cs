@@ -29,7 +29,10 @@ public partial class TitleBar : UserControl
         Bar.DoubleTapped += (_, _) => ToggleMaximize();
     }
 
-    private Window? Host => VisualRoot as Window;
+    // ACHTUNG (Avalonia 12): VisualRoot ist NICHT mehr das Window — die Visual-
+    // Wurzel ist jetzt der interne TopLevelHost, das Window nur noch dessen Kind.
+    // "VisualRoot as Window" liefert null und macht alle Handler zu stillen No-Ops!
+    private Window? Host => TopLevel.GetTopLevel(this) as Window;
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
