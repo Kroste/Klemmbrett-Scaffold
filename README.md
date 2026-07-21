@@ -17,9 +17,9 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
 - **Zurückkopieren:** Doppelklick auf einen Eintrag legt ihn wieder in die
   Zwischenablage
 - **Verlauf leeren:** Ein Klick auf 🧹, weg ist alles
-- **System-Tray:** Das Schließen-✕ minimiert Klemmbrett in den Tray — die
-  Überwachung läuft im Hintergrund weiter. Klick aufs Tray-Icon holt das
-  Fenster zurück, beendet wird über das Tray-Menü („Beenden")
+- **System-Tray:** Der Minimieren-Knopf legt Klemmbrett ins Tray — die
+  Überwachung läuft im Hintergrund weiter. Klick aufs Tray-Icon oder
+  „Anzeigen" holt das Fenster zurück; das Schließen-✕ beendet die App
 - 🔄 **Update-Check:** Prüft GitHub-Releases (proxy-fähig) und meldet neue Versionen
 
 ## Installation
@@ -46,9 +46,9 @@ Klemmbrett starten und einfach normal arbeiten — jeder kopierte Text und
 jedes kopierte Bild erscheint automatisch im Verlauf (geprüft wird zweimal
 pro Sekunde). Bilder werden als Miniatur mit Auflösung angezeigt.
 Doppelklick auf einen Eintrag kopiert ihn zurück in die Zwischenablage,
-der 🧹-Knopf leert den Verlauf. Das Schließen-✕ beendet Klemmbrett nicht,
-sondern legt es ins System-Tray — dort weiter per Klick öffnen oder über
-das Menü wirklich beenden. Die Statuszeile unten meldet Aktionen und
+der 🧹-Knopf leert den Verlauf. Der Minimieren-Knopf (—) legt Klemmbrett ins System-Tray, wo die
+Überwachung weiterläuft — Klick aufs Tray-Icon holt es zurück. Das
+Schließen-✕ beendet die App. Die Statuszeile unten meldet Aktionen und
 verfügbare Updates.
 
 Hinweis für Linux/Wayland: Aus Sicherheitsgründen erlaubt Wayland das Lesen

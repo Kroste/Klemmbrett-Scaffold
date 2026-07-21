@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using Avalonia.Input;
 using Klemmbrett.ViewModels;
 
@@ -10,16 +9,6 @@ public partial class MainWindow : ChromeWindow
     {
         InitializeComponent();
         Loaded += (_, _) => (DataContext as MainWindowViewModel)?.AttachClipboard(this);
-    }
-
-    protected override void OnClosing(WindowClosingEventArgs e)
-    {
-        if (App.ShouldMinimizeToTray)
-        {
-            e.Cancel = true;
-            Hide(); // Kroste-Tray-Muster: Schliessen minimiert in den Tray
-        }
-        base.OnClosing(e);
     }
 
     private void OnEntryDoubleTapped(object? sender, TappedEventArgs e) =>
