@@ -53,6 +53,9 @@
 - Favoriten: `IsPinned` im Modell; gepinnt = oben (Resort: Pin desc, dann Zeit)
   UND von Retention/MaxEntries ausgenommen; überlebt Storage-Roundtrip.
   TogglePin-Command je Zeile (📌-ToggleButton).
+- Löschen einzelner Einträge: `ClipboardHistoryService.Remove` (per DedupeKey),
+  `DeleteEntryCommand` (🗑 je Zeile + Entf-Taste, Fallback auf SelectedEntry).
+  Bild-Einträge: SaveIndex/CleanupOrphanImages löscht die verwaiste PNG mit.
 - Schließen-✕ → Tray (OnClosing Cancel + TrayController.MinimizeToTray),
   Fallback ohne Tray = regulär beenden. Kein globaler Hotkey (Avalonia kann
   nur In-App; systemweit bräuchte Win32/X11/Wayland-Extra) — Tray ist der

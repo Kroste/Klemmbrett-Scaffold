@@ -133,6 +133,21 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void DeleteEntry(IClipboardEntry? entry)
+    {
+        // Fallback auf die Auswahl (für die Entf-Taste)
+        entry ??= SelectedEntry;
+        if (entry is null) return;
+
+        Log.Info("Nutzeraktion: Eintrag löschen ({Type})", entry.GetType().Name);
+        _history.Remove(entry);
+        _storage.SaveIndex(_history.Entries); // löscht auch die verwaiste Bilddatei
+        RebuildDays();
+        RebuildEntries();
+        StatusText = $"{_history.Entries.Count} Einträge";
+    }
+
+    [RelayCommand]
     private void TogglePin(IClipboardEntry? entry)
     {
         if (entry is null) return;

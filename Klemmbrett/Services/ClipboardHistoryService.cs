@@ -51,6 +51,15 @@ public sealed class ClipboardHistoryService
         _entries.AddRange(sorted);
     }
 
+    /// <summary>Entfernt einen einzelnen Eintrag (per DedupeKey).</summary>
+    public void Remove(IClipboardEntry entry)
+    {
+        var removed = _entries.RemoveAll(e => e.DedupeKey == entry.DedupeKey);
+        if (removed > 0)
+            Log.Debug("Eintrag entfernt ({Type}, {Count} verbleibend)",
+                entry.GetType().Name, _entries.Count);
+    }
+
     public void Clear()
     {
         Log.Info("Clipboard-Historie geleert ({Count} Eintraege)", _entries.Count);

@@ -37,6 +37,12 @@ public partial class MainWindow : ChromeWindow
             tray.MinimizeToTray();
             e.Handled = true;
         }
+        else if (e.Key == Key.Delete && DataContext is MainWindowViewModel vm
+                 && vm.SelectedEntry is not null)
+        {
+            vm.DeleteEntryCommand.Execute(null); // null → nutzt SelectedEntry
+            e.Handled = true;
+        }
         base.OnKeyDown(e);
     }
 
