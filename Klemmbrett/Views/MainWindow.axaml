@@ -47,34 +47,61 @@
                  Background="{DynamicResource KrosteSurfaceBrush}">
             <ListBox.DataTemplates>
                 <DataTemplate DataType="m:TextClipboardEntry">
-                    <Grid ColumnDefinitions="Auto,*,Auto">
-                        <ToggleButton Grid.Column="0" Classes="pin"
-                                      IsChecked="{Binding IsPinned, Mode=OneWay}"
-                                      Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).TogglePinCommand}"
-                                      CommandParameter="{Binding}" />
-                        <TextBlock Grid.Column="1" Text="{Binding Preview}"
-                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                        <Button Grid.Column="2" Classes="delete"
-                                Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).DeleteEntryCommand}"
-                                CommandParameter="{Binding}" />
-                    </Grid>
+                    <StackPanel>
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                            <ToggleButton Grid.Column="0" Classes="pin"
+                                          IsChecked="{Binding IsPinned, Mode=OneWay}"
+                                          Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).TogglePinCommand}"
+                                          CommandParameter="{Binding}" />
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayPreview}"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <ToggleButton Grid.Column="2" Classes="reveal"
+                                          IsVisible="{Binding IsSecret}"
+                                          IsChecked="{Binding IsRevealed}" />
+                            <ToggleButton Grid.Column="3" Classes="comment"
+                                          IsChecked="{Binding IsEditingComment}" />
+                            <Button Grid.Column="4" Classes="delete"
+                                    Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).DeleteEntryCommand}"
+                                    CommandParameter="{Binding}" />
+                        </Grid>
+                        <TextBlock Text="{Binding Comment}" IsVisible="{Binding HasComment}"
+                                   FontStyle="Italic" FontSize="12" Opacity="0.75" Margin="26,0,0,2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource KrosteGoldBrush}" />
+                        <TextBox Text="{Binding Comment}" IsVisible="{Binding IsEditingComment}"
+                                 PlaceholderText="Kommentar…" Margin="26,2,0,4"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="120"
+                                 LostFocus="OnCommentLostFocus" />
+                    </StackPanel>
                 </DataTemplate>
                 <DataTemplate DataType="m:ImageClipboardEntry">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-                        <ToggleButton Grid.Column="0" Classes="pin"
-                                      IsChecked="{Binding IsPinned, Mode=OneWay}"
-                                      Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).TogglePinCommand}"
-                                      CommandParameter="{Binding}" />
-                        <Border Grid.Column="1" Background="{DynamicResource KrosteBackgroundBrush}"
-                                CornerRadius="4" Padding="2" Margin="0,0,10,0">
-                            <Image Source="{Binding Bitmap}" MaxWidth="96" MaxHeight="64" Stretch="Uniform" />
-                        </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding Info}" VerticalAlignment="Center"
+                    <StackPanel>
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                            <ToggleButton Grid.Column="0" Classes="pin"
+                                          IsChecked="{Binding IsPinned, Mode=OneWay}"
+                                          Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).TogglePinCommand}"
+                                          CommandParameter="{Binding}" />
+                            <Border Grid.Column="1" Background="{DynamicResource KrosteBackgroundBrush}"
+                                    CornerRadius="4" Padding="2" Margin="0,0,10,0">
+                                <Image Source="{Binding Bitmap}" MaxWidth="96" MaxHeight="64" Stretch="Uniform" />
+                            </Border>
+                            <TextBlock Grid.Column="2" Text="{Binding Info}" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource KrosteGoldBrush}" />
+                            <ToggleButton Grid.Column="3" Classes="comment"
+                                          IsChecked="{Binding IsEditingComment}" />
+                            <Button Grid.Column="4" Classes="delete"
+                                    Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).DeleteEntryCommand}"
+                                    CommandParameter="{Binding}" />
+                        </Grid>
+                        <TextBlock Text="{Binding Comment}" IsVisible="{Binding HasComment}"
+                                   FontStyle="Italic" FontSize="12" Opacity="0.75" Margin="26,0,0,2"
+                                   TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource KrosteGoldBrush}" />
-                        <Button Grid.Column="3" Classes="delete"
-                                Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).DeleteEntryCommand}"
-                                CommandParameter="{Binding}" />
-                    </Grid>
+                        <TextBox Text="{Binding Comment}" IsVisible="{Binding IsEditingComment}"
+                                 PlaceholderText="Kommentar…" Margin="26,2,0,4"
+                                 AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="120"
+                                 LostFocus="OnCommentLostFocus" />
+                    </StackPanel>
                 </DataTemplate>
             </ListBox.DataTemplates>
         </ListBox>

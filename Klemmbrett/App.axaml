@@ -63,5 +63,37 @@
         <Style Selector="Button.delete:pointerover">
             <Setter Property="Opacity" Value="1" />
         </Style>
+        <!-- Aufdecken-Knopf für maskierte Passwörter -->
+        <Style Selector="ToggleButton.reveal">
+            <Setter Property="Content" Value="👁" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ToolTip.Tip" Value="Passwort anzeigen / verbergen" />
+        </Style>
+        <Style Selector="ToggleButton.reveal:checked">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="ToggleButton.reveal:pointerover">
+            <Setter Property="Opacity" Value="0.8" />
+        </Style>
+        <!-- Kommentar-Knopf je Listeneintrag -->
+        <Style Selector="ToggleButton.comment">
+            <Setter Property="Content" Value="💬" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ToolTip.Tip" Value="Kommentar hinzufügen / bearbeiten" />
+        </Style>
+        <Style Selector="ToggleButton.comment:checked">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="ToggleButton.comment:pointerover">
+            <Setter Property="Opacity" Value="0.8" />
+        </Style>
     </Application.Styles>
 </Application>

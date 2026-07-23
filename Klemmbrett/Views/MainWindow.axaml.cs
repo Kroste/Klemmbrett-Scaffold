@@ -41,8 +41,10 @@ public partial class MainWindow : ChromeWindow
             e.Handled = true;
         }
         else if (e.Key == Key.Delete && DataContext is MainWindowViewModel vm
-                 && vm.SelectedEntry is not null)
+                 && vm.SelectedEntry is not null
+                 && FocusManager?.GetFocusedElement() is not TextBox)
         {
+            // Nicht löschen, während in einem Textfeld getippt wird (Suche/Kommentar)
             vm.DeleteEntryCommand.Execute(null); // null → nutzt SelectedEntry
             e.Handled = true;
         }
@@ -51,6 +53,9 @@ public partial class MainWindow : ChromeWindow
 
     private void OnEntryDoubleTapped(object? sender, TappedEventArgs e) =>
         (DataContext as MainWindowViewModel)?.CopySelectedCommand.Execute(null);
+
+    private void OnCommentLostFocus(object? sender, RoutedEventArgs e) =>
+        (DataContext as MainWindowViewModel)?.NotifyCommentChanged();
 
     private void OnAboutClick(object? sender, RoutedEventArgs e)
     {

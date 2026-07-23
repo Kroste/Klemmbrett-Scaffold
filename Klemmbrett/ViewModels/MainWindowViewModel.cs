@@ -124,12 +124,23 @@ public partial class MainWindowViewModel : ViewModelBase
     private static bool MatchesSearch(IClipboardEntry entry, string needle)
     {
         if (needle.Length == 0) return true;
+        // Kommentare sind ebenfalls durchsuchbar (gilt für Text wie Bild)
+        if (entry.Comment is { } c && c.Contains(needle, StringComparison.OrdinalIgnoreCase))
+            return true;
         return entry switch
         {
             TextClipboardEntry t => t.Text.Contains(needle, StringComparison.OrdinalIgnoreCase),
             ImageClipboardEntry i => i.Info.Contains(needle, StringComparison.OrdinalIgnoreCase),
             _ => false
         };
+    }
+
+    /// <summary>Vom MainWindow nach dem Bearbeiten einer Kommentar-Notiz aufgerufen (LostFocus).</summary>
+    public void NotifyCommentChanged()
+    {
+        Log.Info("Nutzeraktion: Kommentar bearbeitet");
+        _storage.SaveIndex(_history.Entries);
+        RebuildEntries(); // Suche über Kommentare aktuell halten
     }
 
     [RelayCommand]

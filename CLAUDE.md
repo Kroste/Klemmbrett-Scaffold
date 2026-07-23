@@ -62,6 +62,25 @@
 - Löschen einzelner Einträge: `ClipboardHistoryService.Remove` (per DedupeKey),
   `DeleteEntryCommand` (🗑 je Zeile + Entf-Taste, Fallback auf SelectedEntry).
   Bild-Einträge: SaveIndex/CleanupOrphanImages löscht die verwaiste PNG mit.
+- Passwort-Maskierung: `SecretDetector.LooksLikeSecret` (testbare, bewusst
+  konservative Heuristik) erkennt beschriftete Secrets (`password=…`, `token:…`
+  via Regex) UND alleinstehende passwortartige Tokens (kein Leerraum, Länge 8–256,
+  keine URL/E-Mail, ≥3 Zeichenklassen INKL. Ziffer — die Ziffer-Pflicht hält
+  CamelCase-Namen/Hex/Base64 draußen). `TextClipboardEntry.IsSecret` einmalig im
+  Ctor; `DisplayPreview` zeigt `••••••••` bis `IsRevealed` (👁-ToggleButton,
+  Nur-Sitzung, NICHT persistiert → Secrets starten nach Neustart maskiert).
+  Volltext bleibt fürs Zurückkopieren erhalten (Maskierung = reine Anzeige, keine
+  Verschlüsselung; die history.json speichert weiterhin Klartext).
+- Kommentare je Eintrag: `Comment` im Interface/Modell, persistiert (StoredEntry
+  bekam optionales `Comment`-Feld → alte history.json lädt kompatibel weiter).
+  Entry-Modelle sind jetzt `ObservableObject` (Basisklasse `ClipboardEntry`),
+  damit Comment/IsRevealed/IsEditingComment live binden. 💬-ToggleButton klappt
+  einen Inline-Editor (`IsEditingComment`) aus; Persistenz über `LostFocus` →
+  `MainWindowViewModel.NotifyCommentChanged` (SaveIndex + RebuildEntries).
+  Kommentar erscheint als kursive Gold-Zeile unter dem Eintrag (`HasComment`).
+  Suche (`MatchesSearch`) prüft zusätzlich `Comment`. WICHTIG: Entf-Taste im
+  MainWindow löscht nur, wenn KEIN TextBox fokussiert ist (sonst löscht das
+  Tippen im Kommentar-/Suchfeld den Eintrag) — Guard via `FocusManager`.
 - Schließen-✕ → Tray (OnClosing Cancel + TrayController.MinimizeToTray),
   Fallback ohne Tray = regulär beenden. Kein globaler Hotkey (Avalonia kann
   nur In-App; systemweit bräuchte Win32/X11/Wayland-Extra) — Tray ist der

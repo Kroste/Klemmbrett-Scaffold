@@ -16,7 +16,15 @@ Clipboard-Manager mit Verlauf — Desktop-App für Windows und Linux (C# / .NET 
   Snipping Tool/Spectacle) landen im Verlauf — mit Vorschaubild und Auflösung
 - **Zurückkopieren:** Doppelklick auf einen Eintrag legt ihn wieder in die
   Zwischenablage
-- **Suche:** Textfeld über der Liste filtert den Verlauf live (Strg+F springt hin)
+- **Suche:** Textfeld über der Liste filtert den Verlauf live (Strg+F springt
+  hin) — durchsucht Text *und* deine Kommentare
+- **Passwort-Maskierung:** Sieht ein Eintrag wie ein Passwort aus (z.B. `password=…`
+  oder ein Zeichensalat aus Buchstaben, Ziffern und Sonderzeichen), zeigt die
+  Liste `••••••••` statt Klartext — Schutz vor neugierigen Blicken. Mit 👁 deckst
+  du ihn kurz auf; zum Zurückkopieren musst du nichts aufdecken
+- **Kommentare:** 💬 an einem Eintrag öffnet ein Notizfeld — schreib dir dazu,
+  wofür der Eintrag ist. Kommentare erscheinen unter dem Eintrag und lassen sich
+  mitdurchsuchen
 - **Favoriten:** 📌 an einem Eintrag heftet ihn oben an — angeheftete Einträge
   laufen nicht nach 30 Tagen ab
 - **30-Tage-Verlauf:** Einträge werden beim Beenden gespeichert und beim Start
@@ -60,8 +68,10 @@ mit „Zeitraum" aus, welcher Tag angezeigt wird — „Alle (30 Tage)" zeigt de
 kompletten aufbewahrten Verlauf.
 Doppelklick auf einen Eintrag kopiert ihn zurück in die Zwischenablage,
 der 🧹-Knopf leert den Verlauf (angeheftete Einträge bleiben). Mit dem
-Suchfeld (Strg+F) findest du Einträge per Text, mit 📌 heftest du wichtige an,
-mit 🗑 (oder Entf) löschst du einen einzelnen Eintrag. Der Minimieren-Knopf (—) legt Klemmbrett ins System-Tray, wo die
+Suchfeld (Strg+F) findest du Einträge per Text oder Kommentar, mit 📌 heftest du
+wichtige an, mit 🗑 (oder Entf) löschst du einen einzelnen Eintrag. Passwort-
+verdächtige Einträge sind maskiert (`••••••••`) — 👁 deckt sie kurz auf. Mit 💬
+hinterlegst du eine Notiz zu einem Eintrag. Der Minimieren-Knopf (—) legt Klemmbrett ins System-Tray, wo die
 Überwachung weiterläuft — Klick aufs Tray-Icon holt es zurück. Das
 Schließen-✕ beendet die App. Die Statuszeile unten meldet Aktionen und
 verfügbare Updates.

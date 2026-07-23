@@ -24,7 +24,7 @@ public sealed class HistoryStorageService
     private readonly string _imagesDir;
     private readonly string _indexPath;
 
-    private sealed record StoredEntry(string Type, DateTimeOffset CapturedAt, string? Text, string? Hash, bool Pinned = false);
+    private sealed record StoredEntry(string Type, DateTimeOffset CapturedAt, string? Text, string? Hash, bool Pinned = false, string? Comment = null);
 
     public HistoryStorageService()
         : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Klemmbrett")) { }
@@ -82,12 +82,12 @@ public sealed class HistoryStorageService
             switch (s.Type)
             {
                 case "text" when s.Text is not null:
-                    return new TextClipboardEntry(s.Text, s.CapturedAt) { IsPinned = s.Pinned };
+                    return new TextClipboardEntry(s.Text, s.CapturedAt) { IsPinned = s.Pinned, Comment = s.Comment };
                 case "image" when s.Hash is not null:
                     var path = ImagePath(s.Hash);
                     if (!File.Exists(path)) return null;
                     using (var fs = File.OpenRead(path))
-                        return new ImageClipboardEntry(new Bitmap(fs), s.Hash, s.CapturedAt) { IsPinned = s.Pinned };
+                        return new ImageClipboardEntry(new Bitmap(fs), s.Hash, s.CapturedAt) { IsPinned = s.Pinned, Comment = s.Comment };
                 default:
                     return null;
             }
@@ -126,8 +126,8 @@ public sealed class HistoryStorageService
             var kept = entries.Where(e => !HistoryDayFilter.IsExpired(e, now)).ToList();
             var stored = kept.Select(e => e switch
             {
-                TextClipboardEntry t => new StoredEntry("text", t.CapturedAt, t.Text, null, t.IsPinned),
-                ImageClipboardEntry i => new StoredEntry("image", i.CapturedAt, null, i.ContentHash, i.IsPinned),
+                TextClipboardEntry t => new StoredEntry("text", t.CapturedAt, t.Text, null, t.IsPinned, t.Comment),
+                ImageClipboardEntry i => new StoredEntry("image", i.CapturedAt, null, i.ContentHash, i.IsPinned, i.Comment),
                 _ => null
             }).Where(s => s is not null).ToList();
 
