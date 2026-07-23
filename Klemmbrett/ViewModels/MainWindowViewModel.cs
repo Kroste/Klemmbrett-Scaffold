@@ -204,16 +204,37 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private async Task CheckForUpdateAsync()
-    {
-        var result = await _updateService.CheckForUpdateAsync();
-        if (result?.UpdateAvailable != true)
-            return;
+        => ApplyUpdateResult(await _updateService.CheckForUpdateAsync());
 
-        _pendingUpdate = result;
-        UpdateAvailable = true;
-        UpdateText = result.AssetUrl is not null
-            ? $"Version {result.Latest} verfügbar"
-            : $"Version {result.Latest} verfügbar (manueller Download)";
+    /// <summary>
+    /// Manuelle Update-Prüfung (aus dem Über-Fenster): erzwingt einen frischen
+    /// Check und aktualisiert die Update-Leiste. Gibt das Ergebnis zurück, damit
+    /// das Über-Fenster „verfügbar" / „aktuell" / „fehlgeschlagen" unterscheiden kann.
+    /// </summary>
+    public async Task<UpdateCheckResult?> RefreshUpdateAsync()
+    {
+        var result = await _updateService.CheckForUpdateAsync(forceRefresh: true);
+        ApplyUpdateResult(result);
+        return result;
+    }
+
+    private void ApplyUpdateResult(UpdateCheckResult? result)
+    {
+        if (result is null)
+            return; // Check fehlgeschlagen (offline/Proxy) — bestehenden Zustand nicht überschreiben
+
+        if (result.UpdateAvailable)
+        {
+            _pendingUpdate = result;
+            UpdateAvailable = true;
+            UpdateText = result.AssetUrl is not null
+                ? $"Version {result.Latest} verfügbar"
+                : $"Version {result.Latest} verfügbar (manueller Download)";
+        }
+        else
+        {
+            UpdateAvailable = false; // bestätigt aktuell → Leiste ausblenden
+        }
     }
 
     /// <summary>Lädt das Update und startet den Austausch — mit Nutzer-Zustimmung (Button).</summary>

@@ -33,8 +33,13 @@
   Eigenes App-Icon (Assets/Klemmbrett.png+.ico, AvaloniaResource +
   ApplicationIcon), ChromeWindow lädt es als Fenster-Icon.
 - AboutWindow (ⓘ-Button in der Bottom-Leiste): Version aus InformationalVersion,
-  manueller Update-Check (ruft UpdateService.CheckForUpdateAsync, gecacht),
-  GitHub/BMC-Links. ChromeWindow + Kroste-Look, ShowDialog(owner).
+  manueller Update-Check, GitHub/BMC-Links. ChromeWindow + Kroste-Look,
+  ShowDialog(owner). WICHTIG: Der automatische Start-Check cacht (max. 1×/Start),
+  aber der manuelle Knopf ruft `CheckForUpdateAsync(forceRefresh: true)` — sonst
+  meldet er nach einem frisch veröffentlichten Release weiter „aktuell", weil er
+  nur den Start-Cache zurückgäbe. Läuft über `MainWindowViewModel.RefreshUpdateAsync`,
+  damit auch die Update-Leiste im Hauptfenster erscheint; `null` (Check
+  fehlgeschlagen) wird von „aktuell" unterschieden.
 - Auto-Update (`UpdateService`): Check (InformationalVersion vs. Release-Tag,
   proxy-aware, 1×/Start) plus Self-Update: passendes Asset je Plattform
   (win-x64.zip / .AppImage / linux-x64.tar.gz), Download mit Fortschritt,

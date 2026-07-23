@@ -60,6 +60,6 @@ public partial class MainWindow : ChromeWindow
     private void OnAboutClick(object? sender, RoutedEventArgs e)
     {
         var updateService = App.Services.GetService<UpdateService>();
-        new AboutWindow(updateService).ShowDialog(this);
+        new AboutWindow(updateService, DataContext as MainWindowViewModel).ShowDialog(this);
     }
 }

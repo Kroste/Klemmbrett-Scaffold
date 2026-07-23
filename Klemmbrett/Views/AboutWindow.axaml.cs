@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Klemmbrett.Services;
+using Klemmbrett.ViewModels;
 using NLog;
 
 namespace Klemmbrett.Views;
@@ -15,14 +16,16 @@ public partial class AboutWindow : ChromeWindow
     private const string BmcUrl = "https://buymeacoffee.com/kroste";
 
     private readonly UpdateService? _updateService;
+    private readonly MainWindowViewModel? _mainViewModel;
 
     // Parameterloser Ctor für den XAML-Designer
     public AboutWindow() : this(null) { }
 
-    public AboutWindow(UpdateService? updateService)
+    public AboutWindow(UpdateService? updateService, MainWindowViewModel? mainViewModel = null)
     {
         AvaloniaXamlLoader.Load(this);
         _updateService = updateService;
+        _mainViewModel = mainViewModel;
 
         var v = Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
@@ -35,7 +38,7 @@ public partial class AboutWindow : ChromeWindow
     {
         var status = this.FindControl<TextBlock>("UpdateStatus")!;
         var button = this.FindControl<Button>("CheckUpdateButton")!;
-        if (_updateService is null)
+        if (_updateService is null && _mainViewModel is null)
             return;
 
         button.IsEnabled = false;
@@ -43,10 +46,16 @@ public partial class AboutWindow : ChromeWindow
         status.Text = "Suche nach Updates…";
         try
         {
-            var result = await _updateService.CheckForUpdateAsync();
-            status.Text = result?.UpdateAvailable == true
-                ? $"Version {result.Latest} verfügbar — im Hauptfenster aktualisieren."
-                : "Du hast die aktuelle Version.";
+            // Manueller Check erzwingt eine frische Abfrage (Cache umgehen). Über das
+            // MainWindowViewModel, damit auch die Update-Leiste im Hauptfenster erscheint.
+            var result = _mainViewModel is not null
+                ? await _mainViewModel.RefreshUpdateAsync()
+                : await _updateService!.CheckForUpdateAsync(forceRefresh: true);
+            status.Text = result is null
+                ? "Update-Prüfung fehlgeschlagen (offline?)."
+                : result.UpdateAvailable
+                    ? $"Version {result.Latest} verfügbar — im Hauptfenster aktualisieren."
+                    : "Du hast die aktuelle Version.";
             Log.Info("Manueller Update-Check: {Msg}", status.Text);
         }
         catch (Exception ex)

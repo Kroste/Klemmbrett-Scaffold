@@ -55,10 +55,15 @@ public sealed class UpdateService
         return Version.TryParse(s, out var v) ? v : null;
     }
 
-    /// <summary>Fehler werden nur geloggt (Warn) — offline/Proxy darf die App nicht stören.</summary>
-    public async Task<UpdateCheckResult?> CheckForUpdateAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Fehler werden nur geloggt (Warn) — offline/Proxy darf die App nicht stören.
+    /// <paramref name="forceRefresh"/>=true umgeht den Cache (für den manuellen
+    /// „Auf Updates prüfen"-Knopf) und fragt GitHub erneut ab; der automatische
+    /// Start-Check bleibt bei max. 1 echtem Check pro App-Start.
+    /// </summary>
+    public async Task<UpdateCheckResult?> CheckForUpdateAsync(bool forceRefresh = false, CancellationToken ct = default)
     {
-        if (_cached is not null) return _cached; // max. 1 echter Check pro App-Start
+        if (!forceRefresh && _cached is not null) return _cached; // max. 1 echter Check pro App-Start
 
         var sw = Stopwatch.StartNew();
         try
