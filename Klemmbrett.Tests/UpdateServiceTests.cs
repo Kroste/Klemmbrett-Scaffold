@@ -22,4 +22,12 @@ public class UpdateServiceTests
     [InlineData("kein-tag")]
     public void ParseVersion_ReturnsNullForGarbage(string? tag)
         => UpdateService.ParseVersion(tag).Should().BeNull();
+
+    [Fact]
+    public void ParseVersion_NormalizesMissingBuild_SoArityDoesNotMatter()
+    {
+        // "1.2" darf nicht als älter gelten als "1.2.0" (sonst wird ein Update verpasst)
+        UpdateService.ParseVersion("1.2").Should().Be(UpdateService.ParseVersion("1.2.0"));
+        (UpdateService.ParseVersion("1.3") > UpdateService.ParseVersion("1.2.0")).Should().BeTrue();
+    }
 }

@@ -52,7 +52,10 @@ public sealed class UpdateService
         var s = tag.Trim().TrimStart('v', 'V');
         var cut = s.IndexOfAny(['+', '-']);
         if (cut >= 0) s = s[..cut];
-        return Version.TryParse(s, out var v) ? v : null;
+        if (!Version.TryParse(s, out var v)) return null;
+        // Fehlende Build-Stelle auf 0 normalisieren: sonst gilt "1.2" (Build=-1)
+        // fälschlich als älter als "1.2.0" (Build=0) und ein Update wird verpasst.
+        return v.Build < 0 ? new Version(v.Major, v.Minor, 0) : v;
     }
 
     /// <summary>
@@ -74,8 +77,13 @@ public sealed class UpdateService
 
             using var json = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(ct));
             var root = json.RootElement;
-            var tag = root.GetProperty("tag_name").GetString();
-            var htmlUrl = root.GetProperty("html_url").GetString() ?? "";
+            if (!root.TryGetProperty("tag_name", out var tagEl))
+            {
+                Log.Warn("Update-Check: GitHub-Antwort ohne 'tag_name'");
+                return null;
+            }
+            var tag = tagEl.GetString();
+            var htmlUrl = root.TryGetProperty("html_url", out var urlEl) ? urlEl.GetString() ?? "" : "";
 
             var latest = ParseVersion(tag);
             if (latest is null)
@@ -114,9 +122,11 @@ public sealed class UpdateService
 
         foreach (var a in assets.EnumerateArray())
         {
-            var name = a.GetProperty("name").GetString();
-            if (name is not null && Match(name))
-                return (name, a.GetProperty("browser_download_url").GetString());
+            if (!a.TryGetProperty("name", out var nameEl)) continue;
+            var name = nameEl.GetString();
+            if (name is not null && Match(name)
+                && a.TryGetProperty("browser_download_url", out var urlEl))
+                return (name, urlEl.GetString());
         }
         return (null, null);
     }
