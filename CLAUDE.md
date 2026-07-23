@@ -66,7 +66,8 @@
   TogglePin-Command je Zeile (📌-ToggleButton).
 - Löschen einzelner Einträge: `ClipboardHistoryService.Remove` (per DedupeKey),
   `DeleteEntryCommand` (🗑 je Zeile + Entf-Taste, Fallback auf SelectedEntry).
-  Bild-Einträge: SaveIndex/CleanupOrphanImages löscht die verwaiste PNG mit.
+  Bild-Einträge: SaveIndex verschiebt die verwaiste PNG in den Trash (kein Sofortlöschen —
+  siehe „Trend-Micro-Robustheit").
 - Passwort-Maskierung: `SecretDetector.LooksLikeSecret` (testbare, bewusst
   konservative Heuristik) erkennt beschriftete Secrets (`password=…`, `token:…`
   via Regex) UND alleinstehende passwortartige Tokens (kein Leerraum, Länge 8–256,
@@ -74,8 +75,18 @@
   CamelCase-Namen/Hex/Base64 draußen). `TextClipboardEntry.IsSecret` einmalig im
   Ctor; `DisplayPreview` zeigt `••••••••` bis `IsRevealed` (👁-ToggleButton,
   Nur-Sitzung, NICHT persistiert → Secrets starten nach Neustart maskiert).
-  Volltext bleibt fürs Zurückkopieren erhalten (Maskierung = reine Anzeige, keine
-  Verschlüsselung; die history.json speichert weiterhin Klartext).
+  Volltext bleibt fürs Zurückkopieren erhalten (Maskierung = Anzeige).
+- Inline-Secret-Verschlüsselung (`ISecretProtector` / `SecretProtector`): als Secret
+  erkannte Text-Einträge werden **einzeln** in `history.json` verschlüsselt (Feld
+  `TextEnc`, Präfix `ENC1:<base64>`); der Rest bleibt lesbarer Klartext-JSON. Bewusst
+  KEIN opaker Gesamt-Blob wie in WebExStudios `CredentialVault` — Verhaltens-AV
+  (Trend Micro Behavior Monitoring) reagiert auf entropiereiche Klumpen und würde
+  Fehlalarm werfen. Schlüssel: **DPAPI CurrentUser** unter Windows, **AES-256-GCM
+  mit lokalem Master-Key** (`%APPDATA%/Klemmbrett/protect.key`, 0600) unter Linux/macOS.
+  Legacy-Klartext-Einträge werden weiter gelesen und beim nächsten `SaveIndex`
+  transparent nach `TextEnc` migriert. Fehlende/kaputte Chiffrate (User-Wechsel,
+  DPAPI-Profil weg) → Eintrag wird verworfen, KEIN Crash. TESTS nutzen `TestProtector`
+  (Base64-Fake ohne echte Krypto), damit sie plattformunabhängig laufen.
 - Kommentare je Eintrag: `Comment` im Interface/Modell, persistiert (StoredEntry
   bekam optionales `Comment`-Feld → alte history.json lädt kompatibel weiter).
   Entry-Modelle sind jetzt `ObservableObject` (Basisklasse `ClipboardEntry`),
@@ -90,6 +101,16 @@
   Fallback ohne Tray = regulär beenden. Kein globaler Hotkey (Avalonia kann
   nur In-App; systemweit bräuchte Win32/X11/Wayland-Extra) — Tray ist der
   Hervorhol-Weg.
+- Trend-Micro-Robustheit / „Historie leeren": früher hat
+  `CleanupOrphanImages` in einer engen Schleife alle PNGs gelöscht — Trend Micros
+  Behavior Monitoring hat das als Wiper/Ransomware klassifiziert und **die App**
+  selbst gelöscht. Fix: verwaiste PNGs werden nach `images.trash/<ts>-<hash>.png`
+  **verschoben** (File.Move, kein Delete). `TrashCleanupService` (Singleton, im
+  DI-Container registriert, fire-and-forget via `_ = Task.Run(…)` beim App-Start)
+  räumt nur Dateien älter `MinAge` (default 10 Min) mit `Throttle` (default 150 ms)
+  Pause zwischen Löschungen weg → hält den Delete-Fluss unter AV-Verdachtsschwellen.
+  WICHTIG: das ist ein Verhaltens-Fix, keine Signatur-Immunität — App bleibt
+  unsigniert, im Zweifel Ausnahme bei Trend Micro eintragen lassen.
 
 ## Roadmap
 

@@ -52,9 +52,9 @@ public class SearchAndPinTests
         var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "kb-pin-" + Guid.NewGuid());
         try
         {
-            var storage = new HistoryStorageService(dir);
+            var storage = new HistoryStorageService(dir, new TestProtector());
             storage.SaveIndex([new TextClipboardEntry("merk-dir-das") { IsPinned = true }]);
-            var loaded = new HistoryStorageService(dir).Load();
+            var loaded = new HistoryStorageService(dir, new TestProtector()).Load();
             loaded.Should().ContainSingle().Which.IsPinned.Should().BeTrue();
         }
         finally { try { System.IO.Directory.Delete(dir, true); } catch { } }

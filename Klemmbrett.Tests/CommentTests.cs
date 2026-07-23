@@ -20,12 +20,12 @@ public class CommentTests : IDisposable
     [Fact]
     public void Comment_SurvivesStorageRoundtrip()
     {
-        var storage = new HistoryStorageService(_dir);
+        var storage = new HistoryStorageService(_dir, new TestProtector());
         storage.SaveIndex([
             new TextClipboardEntry("mit-notiz") { Comment = "Zugang für Kunde X" }
         ]);
 
-        var loaded = new HistoryStorageService(_dir).Load();
+        var loaded = new HistoryStorageService(_dir, new TestProtector()).Load();
 
         var entry = loaded.OfType<TextClipboardEntry>().Single();
         entry.Comment.Should().Be("Zugang für Kunde X");
@@ -48,7 +48,7 @@ public class CommentTests : IDisposable
         File.WriteAllText(Path.Combine(_dir, "history.json"),
             """[{"Type":"text","CapturedAt":"2026-07-23T10:00:00+00:00","Text":"alt","Hash":null,"Pinned":false}]""");
 
-        var loaded = new HistoryStorageService(_dir).Load();
+        var loaded = new HistoryStorageService(_dir, new TestProtector()).Load();
 
         loaded.OfType<TextClipboardEntry>().Single().Comment.Should().BeNull();
     }

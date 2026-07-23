@@ -14,29 +14,57 @@ namespace Klemmbrett.Services;
 /// history.json als Index (atomar via tmp+move, Amtsschimmel-Muster),
 /// Bilder als PNG-Dateien unter images/&lt;hash&gt;.png. Beim Laden und Speichern
 /// werden abgelaufene Einträge und verwaiste Bilddateien entfernt.
+///
+/// <para>Verwaiste Bilder werden NICHT direkt gelöscht, sondern nach
+/// <c>images.trash/</c> verschoben — verhindert das „Wiper"-Verhaltensmuster,
+/// auf das Verhaltens-AV (z. B. Trend Micro) anschlägt. Der Trash wird von
+/// <see cref="TrashCleanupService"/> throttled und zeitversetzt aufgeräumt.</para>
+///
+/// <para>Als Secret erkannte Text-Einträge werden inline via <see cref="ISecretProtector"/>
+/// verschlüsselt (Feld <c>TextEnc</c>) — nicht die ganze Datei. Alter Klartext-JSON bleibt
+/// lesbar und wird beim nächsten Speichern automatisch migriert.</para>
 /// </summary>
 public sealed class HistoryStorageService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
 
     private readonly string _dir;
     private readonly string _imagesDir;
+    private readonly string _trashDir;
     private readonly string _indexPath;
+    private readonly ISecretProtector _protector;
 
-    private sealed record StoredEntry(string Type, DateTimeOffset CapturedAt, string? Text, string? Hash, bool Pinned = false, string? Comment = null);
+    private sealed record StoredEntry(
+        string Type,
+        DateTimeOffset CapturedAt,
+        string? Text,
+        string? TextEnc,
+        string? Hash,
+        bool Pinned = false,
+        string? Comment = null);
 
-    public HistoryStorageService()
-        : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Klemmbrett")) { }
+    public HistoryStorageService(ISecretProtector protector)
+        : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Klemmbrett"), protector) { }
 
     /// <summary>Testbarer Konstruktor mit explizitem Verzeichnis.</summary>
-    public HistoryStorageService(string directory)
+    public HistoryStorageService(string directory, ISecretProtector protector)
     {
         _dir = directory;
         _imagesDir = Path.Combine(_dir, "images");
+        _trashDir = Path.Combine(_dir, "images.trash");
         _indexPath = Path.Combine(_dir, "history.json");
+        _protector = protector;
         Directory.CreateDirectory(_imagesDir);
+        Directory.CreateDirectory(_trashDir);
     }
+
+    /// <summary>Absoluter Pfad zum Trash-Ordner — <see cref="TrashCleanupService"/> räumt hier auf.</summary>
+    public string TrashDirectory => _trashDir;
 
     /// <summary>Lädt den Verlauf (neueste zuerst); abgelaufene Einträge werden verworfen.</summary>
     public List<IClipboardEntry> Load()
@@ -81,8 +109,11 @@ public sealed class HistoryStorageService
         {
             switch (s.Type)
             {
-                case "text" when s.Text is not null:
-                    return new TextClipboardEntry(s.Text, s.CapturedAt) { IsPinned = s.Pinned, Comment = s.Comment };
+                case "text":
+                    var text = ResolveText(s);
+                    return text is null
+                        ? null
+                        : new TextClipboardEntry(text, s.CapturedAt) { IsPinned = s.Pinned, Comment = s.Comment };
                 case "image" when s.Hash is not null:
                     var path = ImagePath(s.Hash);
                     if (!File.Exists(path)) return null;
@@ -97,6 +128,26 @@ public sealed class HistoryStorageService
             Log.Warn(ex, "Eintrag ({Type}) konnte nicht wiederhergestellt werden", s.Type);
             return null;
         }
+    }
+
+    private string? ResolveText(StoredEntry s)
+    {
+        // Neu: verschlüsseltes Feld hat Vorrang.
+        if (_protector.IsProtected(s.TextEnc))
+        {
+            try
+            {
+                return _protector.Unprotect(s.TextEnc!);
+            }
+            catch (Exception ex)
+            {
+                // Anderer Nutzer/DPAPI-Schlüssel weg/Chiffrat kaputt: verwerfen statt crashen.
+                Log.Warn(ex, "Verschlüsselter Eintrag konnte nicht entschlüsselt werden — wird verworfen");
+                return null;
+            }
+        }
+        // Legacy: Klartext-Feld (auch für erkannte Secrets, wird beim nächsten Save migriert).
+        return s.Text;
     }
 
     /// <summary>Legt die PNG-Datei eines Bild-Eintrags ab (einmalig pro Hash).</summary>
@@ -117,26 +168,21 @@ public sealed class HistoryStorageService
         }
     }
 
-    /// <summary>Schreibt den Index atomar (tmp + move) und räumt Verwaistes auf.</summary>
+    /// <summary>Schreibt den Index atomar (tmp + move) und schiebt verwaiste Bilder in den Trash.</summary>
     public void SaveIndex(IReadOnlyList<IClipboardEntry> entries)
     {
         try
         {
             var now = DateTimeOffset.Now;
             var kept = entries.Where(e => !HistoryDayFilter.IsExpired(e, now)).ToList();
-            var stored = kept.Select(e => e switch
-            {
-                TextClipboardEntry t => new StoredEntry("text", t.CapturedAt, t.Text, null, t.IsPinned, t.Comment),
-                ImageClipboardEntry i => new StoredEntry("image", i.CapturedAt, null, i.ContentHash, i.IsPinned, i.Comment),
-                _ => null
-            }).Where(s => s is not null).ToList();
+            var stored = kept.Select(ToStoredEntry).Where(s => s is not null).ToList();
 
             var tmp = _indexPath + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(stored, JsonOpts));
             File.Move(tmp, _indexPath, overwrite: true);
             Log.Debug("Verlauf gespeichert: {Count} Einträge", stored.Count);
 
-            CleanupOrphanImages(kept);
+            MoveOrphanImagesToTrash(kept);
         }
         catch (Exception ex)
         {
@@ -144,7 +190,22 @@ public sealed class HistoryStorageService
         }
     }
 
-    private void CleanupOrphanImages(IReadOnlyList<IClipboardEntry> kept)
+    private StoredEntry? ToStoredEntry(IClipboardEntry entry) => entry switch
+    {
+        TextClipboardEntry t when t.IsSecret =>
+            new StoredEntry("text", t.CapturedAt, Text: null, TextEnc: _protector.Protect(t.Text), Hash: null, t.IsPinned, t.Comment),
+        TextClipboardEntry t =>
+            new StoredEntry("text", t.CapturedAt, Text: t.Text, TextEnc: null, Hash: null, t.IsPinned, t.Comment),
+        ImageClipboardEntry i =>
+            new StoredEntry("image", i.CapturedAt, Text: null, TextEnc: null, Hash: i.ContentHash, i.IsPinned, i.Comment),
+        _ => null
+    };
+
+    /// <summary>
+    /// Verschiebt verwaiste PNGs nach <c>images.trash/</c> — kein Massenlöschen als Reaktion
+    /// auf User-Aktionen. Der Trash wird von <see cref="TrashCleanupService"/> zeitversetzt geräumt.
+    /// </summary>
+    private void MoveOrphanImagesToTrash(IReadOnlyList<IClipboardEntry> kept)
     {
         var referenced = kept.OfType<ImageClipboardEntry>()
             .Select(i => i.ContentHash)
@@ -156,12 +217,14 @@ public sealed class HistoryStorageService
                 continue;
             try
             {
-                File.Delete(file);
-                Log.Debug("Verwaistes Bild gelöscht: {File}", Path.GetFileName(file));
+                var target = Path.Combine(_trashDir,
+                    $"{DateTime.UtcNow:yyyyMMdd-HHmmssfff}-{Path.GetFileName(file)}");
+                File.Move(file, target, overwrite: true);
+                Log.Debug("Verwaistes Bild in den Trash verschoben: {File}", Path.GetFileName(file));
             }
             catch (Exception ex)
             {
-                Log.Warn(ex, "Verwaistes Bild konnte nicht gelöscht werden: {File}", file);
+                Log.Warn(ex, "Verwaistes Bild konnte nicht verschoben werden: {File}", file);
             }
         }
     }

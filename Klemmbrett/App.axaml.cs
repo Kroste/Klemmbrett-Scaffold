@@ -27,13 +27,18 @@ public class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<ISecretProtector, SecretProtector>();
         services.AddSingleton<ClipboardHistoryService>();
         services.AddSingleton<ClipboardMonitorService>();
         services.AddSingleton<HistoryStorageService>();
+        services.AddSingleton<TrashCleanupService>();
         services.AddSingleton<UpdateService>();
         services.AddTransient<MainWindowViewModel>();
         Services = services.BuildServiceProvider();
         Log.Debug("DI-Container aufgebaut ({Count} Registrierungen)", services.Count);
+
+        // Trash im Hintergrund throttled aufräumen — nur alte Reste, kein Delete-Storm.
+        Services.GetRequiredService<TrashCleanupService>().StartInBackground();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
