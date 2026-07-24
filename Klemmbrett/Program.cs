@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Media;
 using Klemmbrett.Logging;
+using Klemmbrett.Services;
 using NLog;
 
 namespace Klemmbrett;
@@ -30,6 +31,20 @@ internal static class Program
         {
             Log.Info("Klemmbrett startet (Version {Version})",
                 typeof(Program).Assembly.GetName().Version);
+
+            // Nur eine Instance zulassen: läuft schon eine, holen wir deren Fenster in den Vordergrund
+            // und beenden uns sofort — kein Avalonia-Start, keine doppelte Clipboard-Überwachung,
+            // keine konkurrierenden Schreibzugriffe auf history.json.
+            var guard = new SingleInstanceGuard();
+            if (!guard.TryClaim())
+            {
+                guard.NotifyPrimary();
+                guard.Dispose();
+                Log.Info("Klemmbrett läuft bereits — vorhandene Instance aktiviert, beende zweiten Start");
+                return 0;
+            }
+            App.PendingGuard = guard;
+
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)

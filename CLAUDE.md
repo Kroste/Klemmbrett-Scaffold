@@ -101,6 +101,19 @@
   Fallback ohne Tray = regulär beenden. Kein globaler Hotkey (Avalonia kann
   nur In-App; systemweit bräuchte Win32/X11/Wayland-Extra) — Tray ist der
   Hervorhol-Weg.
+- Single-Instance (`SingleInstanceGuard`): zweite Starts sind verboten — sonst
+  kämpfen zwei Prozesse um Clipboard-Poll, `history.json` (Save-Race) und Tray-Icon.
+  Umsetzung via Named-Pipe (`Klemmbrett.SingleInstance.<User>`, .NET nutzt auf
+  Linux/macOS Unix-Sockets unter `/tmp/CoreFxPipe_<name>`). Ablauf: `Program.Main`
+  ruft `TryClaim()` **vor** `StartWithClassicDesktopLifetime` — schlägt es fehl,
+  wird ein `ACTIVATE`-Byte an die primäre Instance gesendet (`NotifyPrimary`) und
+  der Prozess beendet sich mit `return 0`, ohne dass Avalonia bootet. Die primäre
+  Instance bekommt das Signal per ThreadPool-Listener, postet auf den UI-Dispatcher
+  und ruft `TrayController.Restore()` (Fallback: MainWindow.Show/Activate). Verwaiste
+  Sockets nach Crash werden über einen Connect-Test erkannt und beim Retry gelöscht.
+  Der Guard wird beim `desktop.Exit` disposed, damit die Pipe frei wird.
+  User-spezifischer Pipe-Name → mehrere Benutzer auf einer Kiste blockieren einander
+  nicht (Terminalserver-Fall).
 - Trend-Micro-Robustheit / „Historie leeren": früher hat
   `CleanupOrphanImages` in einer engen Schleife alle PNGs gelöscht — Trend Micros
   Behavior Monitoring hat das als Wiper/Ransomware klassifiziert und **die App**

@@ -82,7 +82,12 @@ public sealed class TrayController
     /// <summary>True, solange ein Tray verfügbar ist (Schließen darf dann ins Tray statt beenden).</summary>
     public bool IsAvailable => _trayIcon is not null;
 
-    private void Restore()
+    /// <summary>
+    /// Holt das Fenster aus dem Tray zurück und aktiviert es. Auch aufrufbar, wenn das Fenster
+    /// gerade nur minimiert oder verdeckt ist — dient als „Bring to Front" für den
+    /// Single-Instance-Pfad.
+    /// </summary>
+    public void Restore()
     {
         // Guard + Post: das Setzen von WindowState.Normal feuert PropertyChanged
         // erneut — ohne Guard gäbe es eine Minimize/Restore-Schleife.
